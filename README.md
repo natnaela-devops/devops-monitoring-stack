@@ -40,3 +40,30 @@ Grafana
 http://localhost:3000
 # (default login: admin / admin)
 ```
+## Real-World Usage
+I have used similar observability stacks to monitor production Kubernetes clusters running Kafka, YugabyteDB, PostgreSQL, and critical banking/health applications. This setup helped significantly reduce Mean Time To Resolution (MTTR) by providing clear visibility into infrastructure and application performance.
+
+## Architecture Overview
+```mermaid
+flowchart TD
+    subgraph "Applications & Infrastructure"
+        A[Kubernetes Cluster\nRancher RKE2]
+        B[Kafka]
+        C[YugabyteDB / PostgreSQL]
+        D[Microservices]
+    end
+
+    Prometheus[Prometheus\nMetrics Collection]
+
+    Grafana[Grafana\nDashboards & Alerting]
+
+    Signoz[Signoz\nDistributed Tracing\n+ Metrics]
+
+    A --> Prometheus
+    B --> Prometheus
+    C --> Prometheus
+    D --> Prometheus
+    Prometheus --> Grafana
+    Prometheus --> Signoz
+    Signoz --> Grafana
+```
