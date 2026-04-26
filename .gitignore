@@ -1,0 +1,11 @@
+# Kubernetes
+kubeconfig
+*.kubeconfig
+
+# Helm
+charts/
+Chart.lock
+
+# Temporary files
+*.log
+.DS_Store
