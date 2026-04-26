@@ -31,7 +31,12 @@ docker-compose up -d
 ```
 
 ### Check it on your browser
+Prometheus
 ```bash
-Prometheus → http://localhost:9090
-Grafana → http://localhost:3000 (default login: admin / admin)
+http://localhost:9090
+```
+Grafana
+```bash
+http://localhost:3000
+# (default login: admin / admin)
 ```
