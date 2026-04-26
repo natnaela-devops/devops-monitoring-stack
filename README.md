@@ -28,3 +28,10 @@ This stack is similar to what I have implemented for banking systems and governm
 ### Quick Start (Local Testing)
 ```bash
 docker-compose up -d
+```
+
+### Check it on your browser
+```bash
+Prometheus → http://localhost:9090
+Grafana → http://localhost:3000 (default login: admin / admin)
+```
