@@ -1,0 +1,19 @@
+cluster.name: "{{ OPENSEARCH_CLUSTER_NAME }}"
+node.name: "{{ OPENSEARCH_NODE_NAME }}"
+
+path.data: /var/lib/opensearch
+path.logs: /var/log/opensearch
+
+network.host: "{{ OPENSEARCH_BIND_ADDRESS }}"
+http.port: 9200
+transport.port: 9300
+
+# Functional single-node mode only. Replace this with an approved multi-node
+# discovery and cluster-manager configuration before production HA deployment.
+discovery.type: single-node
+
+bootstrap.memory_lock: true
+plugins.security.disabled: false
+
+# Production certificates, distinguished names, and role mappings are private
+# environment configuration and must never be committed to this repository.

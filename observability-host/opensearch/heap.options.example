@@ -1,0 +1,4 @@
+# Set both values to the same measured size. Keep enough host memory available
+# for the operating-system page cache; never size from total RAM alone.
+-Xms{{ OPENSEARCH_HEAP_SIZE }}
+-Xmx{{ OPENSEARCH_HEAP_SIZE }}
