@@ -1,0 +1,51 @@
+groups:
+  - name: platform-resource-alerts
+    interval: 30s
+    rules:
+      - alert: NodeHighCPUUsage
+        expr: |
+          100 - (
+            avg by (instance) (
+              rate(node_cpu_seconds_total{mode="idle"}[5m])
+            ) * 100
+          ) > 80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Node CPU usage is above 80 percent
+          description: Sustained CPU pressure was observed for at least ten minutes.
+
+      - alert: NodeHighMemoryUsage
+        expr: |
+          100 * (
+            1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes
+          ) > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Node memory usage is above 85 percent
+          description: Sustained memory pressure was observed for at least ten minutes.
+
+      - alert: NodeFilesystemLowSpace
+        expr: |
+          100 * (
+            1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"}
+              / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}
+          ) > 85
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Node filesystem usage is above 85 percent
+          description: A persistent filesystem is approaching its capacity threshold.
+
+      - alert: OpenTelemetryCollectorTargetDown
+        expr: up{job="otel-collector"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: The OpenTelemetry Collector metrics endpoint is unavailable
+          description: Prometheus has been unable to scrape the Collector endpoint for five minutes.

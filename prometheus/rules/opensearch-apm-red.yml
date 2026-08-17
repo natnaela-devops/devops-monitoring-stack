@@ -1,0 +1,135 @@
+groups:
+  - name: opensearch-apm-red
+    interval: 60s
+    rules:
+      - record: request
+        expr: |
+          label_replace(
+            label_replace(
+              label_replace(
+                label_join(
+                  sum by (service_name, http_request_method, http_route) (
+                    clamp_min(
+                      http_server_request_duration_seconds_count{service_name!="",http_route!~"/actuator/.*"}
+                      - (
+                        http_server_request_duration_seconds_count{service_name!="",http_route!~"/actuator/.*"} offset 1m
+                        or
+                        0 * http_server_request_duration_seconds_count{service_name!="",http_route!~"/actuator/.*"}
+                      ),
+                      0
+                    )
+                  ),
+                  "operation", " ", "http_request_method", "http_route"
+                ),
+                "service", "$1", "service_name", "(.+)"
+              ),
+              "environment", "generic:default", "service_name", ".+"
+            ),
+            "namespace", "span_derived", "service_name", ".+"
+          )
+
+      - record: error
+        expr: |
+          label_replace(
+            label_replace(
+              label_replace(
+                label_join(
+                  (
+                    sum by (service_name, http_request_method, http_route) (
+                      clamp_min(
+                        http_server_request_duration_seconds_count{service_name!="",http_route!~"/actuator/.*",http_response_status_code=~"4.."}
+                        - (
+                          http_server_request_duration_seconds_count{service_name!="",http_route!~"/actuator/.*",http_response_status_code=~"4.."} offset 1m
+                          or
+                          0 * http_server_request_duration_seconds_count{service_name!="",http_route!~"/actuator/.*",http_response_status_code=~"4.."}
+                        ),
+                        0
+                      )
+                    )
+                    or
+                    0 * sum by (service_name, http_request_method, http_route) (
+                      clamp_min(
+                        http_server_request_duration_seconds_count{service_name!="",http_route!~"/actuator/.*"}
+                        - (
+                          http_server_request_duration_seconds_count{service_name!="",http_route!~"/actuator/.*"} offset 1m
+                          or
+                          0 * http_server_request_duration_seconds_count{service_name!="",http_route!~"/actuator/.*"}
+                        ),
+                        0
+                      )
+                    )
+                  ),
+                  "operation", " ", "http_request_method", "http_route"
+                ),
+                "service", "$1", "service_name", "(.+)"
+              ),
+              "environment", "generic:default", "service_name", ".+"
+            ),
+            "namespace", "span_derived", "service_name", ".+"
+          )
+
+      - record: fault
+        expr: |
+          label_replace(
+            label_replace(
+              label_replace(
+                label_join(
+                  (
+                    sum by (service_name, http_request_method, http_route) (
+                      clamp_min(
+                        http_server_request_duration_seconds_count{service_name!="",http_route!~"/actuator/.*",http_response_status_code=~"5.."}
+                        - (
+                          http_server_request_duration_seconds_count{service_name!="",http_route!~"/actuator/.*",http_response_status_code=~"5.."} offset 1m
+                          or
+                          0 * http_server_request_duration_seconds_count{service_name!="",http_route!~"/actuator/.*",http_response_status_code=~"5.."}
+                        ),
+                        0
+                      )
+                    )
+                    or
+                    0 * sum by (service_name, http_request_method, http_route) (
+                      clamp_min(
+                        http_server_request_duration_seconds_count{service_name!="",http_route!~"/actuator/.*"}
+                        - (
+                          http_server_request_duration_seconds_count{service_name!="",http_route!~"/actuator/.*"} offset 1m
+                          or
+                          0 * http_server_request_duration_seconds_count{service_name!="",http_route!~"/actuator/.*"}
+                        ),
+                        0
+                      )
+                    )
+                  ),
+                  "operation", " ", "http_request_method", "http_route"
+                ),
+                "service", "$1", "service_name", "(.+)"
+              ),
+              "environment", "generic:default", "service_name", ".+"
+            ),
+            "namespace", "span_derived", "service_name", ".+"
+          )
+
+      - record: latency_seconds_bucket
+        expr: |
+          label_replace(
+            label_replace(
+              label_replace(
+                label_join(
+                  sum by (service_name, http_request_method, http_route, le) (
+                    clamp_min(
+                      http_server_request_duration_seconds_bucket{service_name!="",http_route!~"/actuator/.*"}
+                      - (
+                        http_server_request_duration_seconds_bucket{service_name!="",http_route!~"/actuator/.*"} offset 1m
+                        or
+                        0 * http_server_request_duration_seconds_bucket{service_name!="",http_route!~"/actuator/.*"}
+                      ),
+                      0
+                    )
+                  ),
+                  "operation", " ", "http_request_method", "http_route"
+                ),
+                "service", "$1", "service_name", "(.+)"
+              ),
+              "environment", "generic:default", "service_name", ".+"
+            ),
+            "namespace", "span_derived", "service_name", ".+"
+          )

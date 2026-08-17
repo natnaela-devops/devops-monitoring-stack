@@ -9,3 +9,10 @@ Chart.lock
 # Temporary files
 *.log
 .DS_Store
+.env
+.env.*
+!.env.example
+
+# Local observability state
+data/
+snapshots/

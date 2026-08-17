@@ -3,18 +3,11 @@ global:
   evaluation_interval: 15s
 
 rule_files:
-  - "alert.rules.yml"
+  - /etc/prometheus/rules/*.yml
 
 scrape_configs:
-  - job_name: 'prometheus'
+  # The Kubernetes Collector exposes the metrics it receives from applications,
+  # kube-state-metrics, and node-exporter on this host-facing endpoint.
+  - job_name: otel-collector
     static_configs:
-      - targets: ['localhost:9090']
-
-  - job_name: 'node'
-    static_configs:
-      - targets: ['host.docker.internal:9100']   # Node Exporter (add if needed)
-
-  # Example for Kubernetes (when deployed in cluster)
-  - job_name: 'kubernetes-nodes'
-    kubernetes_sd_configs:
-      - role: node
+      - targets: ["127.0.0.1:8889"]
