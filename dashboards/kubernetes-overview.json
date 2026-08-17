@@ -1,5 +1,0 @@
-{
-  "title": "Kubernetes Cluster Overview",
-  "description": "Sample dashboard for monitoring RKE2 cluster with Prometheus + Grafana",
-  "tags": ["kubernetes", "prometheus", "rke2"]
-}

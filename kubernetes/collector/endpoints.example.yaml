@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: observability-endpoints
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: otel-collector
+    app.kubernetes.io/part-of: observability
+data:
+  # Replace these example DNS names in each environment overlay.
+  DATA_PREPPER_TRACES_ENDPOINT: data-prepper.observability.example.internal:21890
+  DATA_PREPPER_LOGS_ENDPOINT: data-prepper.observability.example.internal:21891
+  PROMETHEUS_REMOTE_WRITE_ENDPOINT: http://prometheus.observability.example.internal:9090/api/v1/write

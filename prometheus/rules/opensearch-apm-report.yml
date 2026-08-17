@@ -1,0 +1,83 @@
+groups:
+  - name: apm-slo-report
+    interval: 60s
+    rules:
+      - record: apm_report_requests_24h
+        expr: |
+          sum by (service, environment) (
+            sum_over_time(request[24h])
+          )
+
+      - record: apm_report_errors_24h
+        expr: |
+          sum by (service, environment) (
+            sum_over_time(error[24h])
+          )
+
+      - record: apm_report_faults_24h
+        expr: |
+          sum by (service, environment) (
+            sum_over_time(fault[24h])
+          )
+
+      - record: apm_report_availability_percent_24h
+        expr: |
+          (
+            100 * (
+              1 - apm_report_faults_24h
+                / apm_report_requests_24h
+            )
+          )
+          and on (service, environment)
+          (apm_report_requests_24h > 0)
+
+      - record: apm_report_error_budget_remaining_percent_24h
+        expr: |
+          clamp_max(
+            clamp_min(
+              100 * (
+                1 - (
+                  apm_report_faults_24h
+                  / apm_report_requests_24h
+                ) / (1 - 0.9995)
+              ),
+              0
+            ),
+            100
+          )
+          and on (service, environment)
+          (apm_report_requests_24h > 0)
+
+      - record: apm_report_error_rate_percent_24h
+        expr: |
+          (
+            100 * (
+              apm_report_errors_24h + apm_report_faults_24h
+            ) / apm_report_requests_24h
+          )
+          and on (service, environment)
+          (apm_report_requests_24h > 0)
+
+      - record: apm_report_request_rate_per_second_24h
+        expr: apm_report_requests_24h / 86400
+
+      - record: apm_report_availability_percent_1m
+        expr: |
+          (
+            100 * (
+              1 -
+                sum by (service, environment) (fault)
+                / sum by (service, environment) (request)
+            )
+          )
+          and on (service, environment)
+          (sum by (service, environment) (request) > 0)
+
+      - record: apm_report_p95_latency_milliseconds_24h
+        expr: |
+          1000 * histogram_quantile(
+            0.95,
+            sum by (service, environment, le) (
+              sum_over_time(latency_seconds_bucket[24h])
+            )
+          )
