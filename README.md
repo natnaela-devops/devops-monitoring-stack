@@ -78,7 +78,9 @@ See [Kubernetes Telemetry Onboarding](docs/05-kubernetes-telemetry-onboarding.md
 │   ├── 03-infrastructure-prerequisites.md
 │   ├── 04-lab-preflight-validation.md
 │   ├── 05-kubernetes-telemetry-onboarding.md
-│   └── 06-observability-host-bootstrap.md
+│   ├── 06-observability-host-bootstrap.md
+│   └── 07-validation-and-evidence.md
+├── evidence/                           # Evidence policy; generated output stays local
 ├── kubernetes/
 │   ├── collector/                       # Collector, Service, RBAC, and configuration
 │   ├── examples/                        # Mutually exclusive Java onboarding modes
@@ -86,6 +88,8 @@ See [Kubernetes Telemetry Onboarding](docs/05-kubernetes-telemetry-onboarding.md
 │   └── operator/                        # Pinned Operator Helm values
 ├── prometheus/
 │   └── rules/                           # Platform alerts, RED, SLO, and report rules
+├── scripts/
+│   └── validate-platform.sh             # Read-only end-to-end acceptance checks
 ├── prometheus.yml                       # Remote-write receiver and local scrape baseline
 └── versions.env                         # Frozen component baseline
 ```
@@ -116,6 +120,7 @@ Read the repository in this order:
 4. [Lab Preflight Validation](docs/04-lab-preflight-validation.md)
 5. [Kubernetes Telemetry Onboarding](docs/05-kubernetes-telemetry-onboarding.md)
 6. [Dedicated Observability Host Bootstrap](docs/06-observability-host-bootstrap.md)
+7. [Validation and Evidence](docs/07-validation-and-evidence.md)
 
 ## Lab-only OpenSearch start
 

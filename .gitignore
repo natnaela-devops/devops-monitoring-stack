@@ -16,3 +16,6 @@ Chart.lock
 # Local observability state
 data/
 snapshots/
+
+# Generated validation evidence may contain environment metadata.
+evidence/generated/
