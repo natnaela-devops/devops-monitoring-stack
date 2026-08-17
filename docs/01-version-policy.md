@@ -30,8 +30,8 @@ This repository pins exact, validated component versions so that the lab, UAT, a
 | Data Prepper | 2.14.1 | 2.14.1 | N-2 line and validated pipeline behavior |
 | Prometheus | 3.10.0 | 3.13.2 LTS | Production uses the supported LTS line rather than an expired short-lived minor |
 | OpenTelemetry Collector Contrib | 0.156.0 | 0.156.0 | Exact N-2 selection from 0.158.0 |
-| OpenTelemetry Operator | Not installed yet | 0.154.0 | Numeric N-2 is 0.155.0, but no corresponding official Helm chart is available; nearest older charted version selected |
-| OpenTelemetry Operator Helm chart | Not installed yet | 0.119.0 | Official chart mapping for Operator 0.154.0 |
+| OpenTelemetry Operator | 0.154.0 | 0.154.0 | Numeric N-2 is 0.155.0, but no corresponding official Helm chart is available; nearest older charted version selected |
+| OpenTelemetry Operator Helm chart | 0.119.0 | 0.119.0 | Official chart mapping for Operator 0.154.0 |
 | OpenTelemetry Java agent | 2.28.1 | 2.28.1 | N-2 line and already validated with the Spring Boot services |
 | Java runtime | 17.0.19 | Java 17 LTS | Application and agent compatibility |
 | Helm client | 3.20.0 | 3.20.x | Deployment client pinned for reproducible Helm rendering |
