@@ -1,0 +1,17 @@
+server.name: "{{ DASHBOARDS_SERVER_NAME }}"
+server.host: "{{ DASHBOARDS_BIND_ADDRESS }}"
+server.port: 5601
+
+server.ssl.enabled: true
+server.ssl.certificate: "{{ DASHBOARDS_TLS_CERTIFICATE }}"
+server.ssl.key: "{{ DASHBOARDS_TLS_PRIVATE_KEY }}"
+
+opensearch.hosts:
+  - "{{ OPENSEARCH_HTTPS_ENDPOINT }}"
+opensearch.username: "{{ DASHBOARDS_SERVICE_USERNAME }}"
+opensearch.password: "{{ DASHBOARDS_SERVICE_PASSWORD }}"
+opensearch.ssl.certificateAuthorities:
+  - "{{ OPENSEARCH_CA_CERTIFICATE }}"
+opensearch.ssl.verificationMode: full
+
+opensearch_security.cookie.secure: true
