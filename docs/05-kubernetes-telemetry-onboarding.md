@@ -1,131 +1,124 @@
 # Kubernetes Telemetry Onboarding
 
-**Validation date:** 2026-08-17
-**Environment:** Functional RKE2 lab
-**Decision:** PASS for reusable application onboarding
+**Validation date:** 2026-09-03  
+**Environment:** Enat UAT2 RKE2 cluster  
+**Decision:** PASS for the current reusable application-onboarding model
 
 ## Purpose
 
-This stage provides one cluster-level telemetry path for a large application fleet. Applications send OTLP traces, logs, and metrics to a central in-cluster Collector. The Collector enriches all three signals with Kubernetes metadata and forwards them to the external observability services.
+This stage provides one cluster-level telemetry path for a large application fleet. Instrumented applications send OTLP traces to a central in-cluster Collector, while Fluent Bit collects Kubernetes container stdout logs. The telemetry pipeline enriches and processes those signals before storage in the dedicated observability platform.
 
-The manifests are sanitized examples. Replace the endpoint examples, environment name, cluster name, namespaces, registry, and capacity values before deployment.
+The manifests in this repository are sanitized examples. Replace endpoint examples, environment names, cluster names, namespaces, registries, credentials, and capacity values before deployment.
 
-## Validated versions
+## Verified UAT2 versions
 
 | Component | Version |
 |---|---:|
-| OpenTelemetry Collector Contrib | 0.156.0 |
-| OpenTelemetry Operator | 0.154.0 |
-| OpenTelemetry Operator Helm chart | 0.119.0 |
-| OpenTelemetry Java agent | 2.28.1 |
-| Fluent Bit | 4.1.0 |
-| Data Prepper | 2.14.1 |
-| OpenSearch and Dashboards | 3.7.0 |
+| OpenTelemetry Collector K8s | 0.158.0 |
+| OpenTelemetry Operator | 0.157.0 |
+| OpenTelemetry Java agent | 2.30.0 |
+| Fluent Bit | 5.1.1 |
+| kube-state-metrics | v2.18.0 |
+| Data Prepper | 2.16.0 |
+| OpenSearch / OpenSearch Dashboards | 3.6.0 |
+| RKE2 / Kubernetes | v1.34.5+rke2r1 / v1.34.5 |
+
+The exact running image tags and host binaries were verified from the UAT2 environment. See [`versions.env`](../versions.env).
 
 ## Cluster-level flow
 
-1. A Java application uses exactly one OpenTelemetry Java agent.
-2. The agent sends OTLP signals to `otel-collector.monitoring.svc.cluster.local`.
-3. The Collector adds namespace, pod, workload, node, container, and image identity.
-4. Traces and correlated logs are sent to Data Prepper.
-5. Metrics are sent to the Prometheus remote-write endpoint.
-6. Data Prepper creates trace documents and v2 service-map relationships in OpenSearch.
+1. A Java workload uses exactly one OpenTelemetry Java agent where instrumentation is enabled.
+2. The agent sends OTLP trace data to the central in-cluster Collector.
+3. The Collector adds Kubernetes resource identity and routes trace telemetry toward the processing layer.
+4. Fluent Bit collects container stdout logs cluster-wide and sends them to the log-ingestion path.
+5. Data Prepper parses/normalizes telemetry and writes trace/log documents to OpenSearch.
+6. kube-state-metrics and Node Exporter expose Kubernetes/host metrics scraped by Prometheus.
 
 One Operator installation serves the Kubernetes cluster. It is not installed once per node or once per application.
 
 ## Mandatory instrumentation decision
 
-Every Java workload must use exactly one of these modes.
+Every Java workload must use exactly one instrumentation mode.
 
-| Image state | Required mode | Injection annotation |
+| Image state | Required mode | Injection rule |
 |---|---|---|
-| Image already starts Java with `-javaagent` | Embedded-agent mode | Must be absent |
-| Image contains no Java agent | Operator-injected mode | `instrumentation.opentelemetry.io/inject-java: monitoring/platform-java` |
+| Image already starts Java with `-javaagent` | Embedded-agent mode | Operator Java injection must be absent |
+| Image contains no Java agent | Operator-injected mode | Enable the approved `inject-java` annotation |
 
-Never enable Operator injection on an image that already starts an embedded agent. A double agent can duplicate signals, increase memory and CPU use, or prevent application startup.
+Never enable Operator injection on an image that already starts an embedded agent. A double agent can duplicate telemetry, increase memory/CPU use, or prevent application startup.
 
-## Embedded-agent onboarding
+## Current embedded-agent validation
 
-Use [java-embedded-agent.yaml](../kubernetes/examples/java-embedded-agent.yaml) for the current application fleet whose images already include the Java agent.
+The UAT2 cluster was inspected directly and multiple running services across application namespaces reported:
 
-For each workload:
-
-1. confirm that the Java command contains one `-javaagent` argument;
-2. configure the central OTLP endpoint and exporters;
-3. assign stable `service.name`, `service.namespace`, `service.version`, and environment identity;
-4. add `fluentbit.io/exclude: "true"` when OTLP log export is enabled;
-5. do not add an Operator injection annotation.
-
-## Operator-injected onboarding
-
-Use [java-operator-injected.yaml](../kubernetes/examples/java-operator-injected.yaml) only for an agentless application image. The Operator injects the pinned Java agent through an init container and supplies the standard OTLP environment.
-
-The shared [Instrumentation](../kubernetes/instrumentation/java.yaml) resource is opt-in. No application is mutated until its pod template carries the explicit injection annotation.
-
-The lab validation deliberately bypassed the sample image's embedded-agent entrypoint before enabling injection. Inspection confirmed one injected init container and one `JAVA_TOOL_OPTIONS` agent argument.
-
-## Duplicate-log policy
-
-Fluent Bit collects container stdout cluster-wide. Java auto-instrumentation can also export the same application records through OTLP with trace and span context.
-
-For applications using `OTEL_LOGS_EXPORTER=otlp`, add this pod-template annotation:
-
-```yaml
-fluentbit.io/exclude: "true"
+```text
+opentelemetry-javaagent - version: 2.30.0
 ```
 
-The Fluent Bit Kubernetes filter must have `K8S-Logging.Exclude On`. System workloads and applications that do not export OTLP logs remain collected through Fluent Bit.
+This provides runtime evidence that the current instrumented service fleet is consistently using the pinned Java-agent version rather than relying only on image-build assumptions.
+
+## Trace-context behavior
+
+The platform uses OpenTelemetry `traceId`, `spanId`, and parent relationships as the authoritative distributed-tracing context.
+
+Validation includes:
+
+- HTTP service-to-service trace propagation;
+- Kafka producer/consumer trace propagation;
+- the same traceId across asynchronous message boundaries;
+- a new spanId for each producer/consumer operation;
+- parentSpanId relationships connecting downstream consumer spans back to the producing span where expected.
+
+Application/business identifiers such as phone or account values are lookup/correlation keys only. They never replace or synthesize a real OpenTelemetry traceId.
+
+## Log collection and normalization
+
+Fluent Bit collects Kubernetes stdout logs and Data Prepper performs processing before OpenSearch indexing. The validated UAT2 processing includes known-format trace/span extraction, field normalization, ANSI escape removal, and additive business-correlation fields where the source log actually contains the value.
+
+Services without OpenTelemetry trace context remain searchable in Logs but cannot be represented as part of a distributed trace until real trace context exists.
 
 ## Collector security and metadata
 
-The Collector uses a dedicated ServiceAccount and read-only `get`, `list`, and `watch` permissions. It cannot create, update, patch, or delete Kubernetes resources.
+The Collector should use a dedicated ServiceAccount and read-only Kubernetes permissions required for metadata enrichment. Production promotion must retain least privilege and add the final NetworkPolicy/firewall and authenticated transport controls.
 
-The `k8s_attributes` processor enriches telemetry with:
-
-- namespace, pod, pod UID, and pod start time;
-- Deployment, ReplicaSet, DaemonSet, or StatefulSet identity;
-- node and container identity;
-- container image name and tag.
-
-The Collector container runs as non-root, drops all Linux capabilities, prevents privilege escalation, uses a read-only root filesystem, and applies the runtime-default seccomp profile.
+Expected enriched identity includes namespace, pod, workload, node, container, and image attributes when available from the Kubernetes metadata processor.
 
 ## Deployment order
 
-1. Install the Operator with chart `0.119.0` and [values.yaml](../kubernetes/operator/values.yaml).
-2. Customize the external endpoints and cluster name.
-3. Validate the Collector configuration using the pinned Collector image.
-4. Apply [kubernetes/collector](../kubernetes/collector).
-5. Apply the shared Java `Instrumentation` resource.
-6. Select exactly one instrumentation mode per workload.
-7. validate one application before enabling additional namespaces.
+1. Install the pinned OpenTelemetry Operator release.
+2. Configure the approved Collector endpoints, cluster identity, resources, and security settings.
+3. Validate the Collector configuration against image `otel/opentelemetry-collector-k8s:0.158.0` before rollout.
+4. Deploy the Collector and verify readiness.
+5. Deploy Fluent Bit 5.1.1 and verify log ingestion.
+6. Deploy/verify kube-state-metrics v2.18.0 for Kubernetes state metrics.
+7. Select exactly one Java-agent instrumentation mode per workload.
+8. Validate one service end-to-end before enabling additional applications.
+9. Confirm trace, log, metric, and resource/capacity behavior before wider rollout.
 
 ## Validation evidence
 
-The lab produced the following results:
+The current UAT2 implementation has demonstrated:
 
-- Collector configuration validation succeeded before rollout.
-- Collector rollout completed without warnings or errors.
-- Dedicated Collector RBAC returned `yes` for required reads and no write permissions were granted.
-- A newly Operator-instrumented Java service exported traces, logs, and metrics.
-- The reporting rules discovered the new service automatically.
-- Kubernetes metadata existed in both log and span resource attributes.
-- Four business log records shared one trace across the gateway and payment services.
-- Fluent Bit exclusion removed the two duplicate, uncorrelated gateway log records.
-- The v2 service map created the expected gateway-to-payment relationship.
+- Collector 0.158.0 running in the monitoring namespace;
+- Operator 0.157.0 running in the monitoring namespace;
+- Java agent 2.30.0 confirmed from running application logs;
+- Kubernetes metadata present in trace resource attributes;
+- distributed context propagation through HTTP and Kafka operations;
+- centralized logs through Fluent Bit 5.1.1;
+- Data Prepper 2.16.0 normalization and trace/log ingestion;
+- OpenSearch 3.6.0 trace/log storage and Dashboards investigation;
+- broad log searching separated from strict real-trace correlation.
 
-No internal addresses, hostnames, credentials, tokens, trace identifiers, transaction identifiers, or pod identifiers are retained in this public evidence.
+No internal addresses, hostnames, credentials, customer identifiers, or real transaction/trace values are retained in this public evidence.
 
 ## Rollback
 
-If a Collector rollout fails:
+If a Collector rollout fails, restore the previous validated configuration/image, restart or roll back the Deployment, and verify application OTLP connectivity and Collector health before continuing.
 
-1. restore the previous ConfigMap;
-2. restart the Collector Deployment;
-3. wait for rollout completion;
-4. verify Collector logs and application OTLP connectivity.
+If Operator injection causes an application failure, remove the injection annotation from the affected workload and roll back that application Deployment. Do not remove the cluster-wide Operator merely to recover one workload.
 
-If Operator injection causes an application failure, remove only the injection annotation and roll back the application Deployment. Do not remove the cluster-wide Operator while unrelated instrumented applications are running.
+If a Fluent Bit update disrupts logging, restore the previous DaemonSet/configuration and verify fresh log arrival before resuming rollout.
 
 ## Production scale boundary
 
-This commit validates the onboarding model, not final production capacity. Production must separately add Collector high availability, disruption budgets, topology spread, autoscaling or capacity-tested replicas, TLS, credential management, network policies, alerting, and disaster-recovery procedures.
+This UAT validation proves the functional onboarding and correlation model, not final production capacity. Production still requires RBAC/access-control completion, alerting and runbooks, resource/capacity tuning, TLS/authentication, credential management, NetworkPolicies/firewalls, backup/recovery testing, and representative load/soak/failure testing.
