@@ -1,82 +1,79 @@
 # Version and Lifecycle Policy
 
-**Baseline date:** 2026-08-14  
-**Scope:** RKE2 application cluster and the dedicated OpenSearch observability platform.
+**Baseline date:** 2026-09-03  
+**Scope:** Verified Enat UAT2 RKE2 application cluster and dedicated OpenSearch observability platform.
 
 ## Objective
 
-This repository pins exact, validated component versions so that the lab, UAT, and production environments can be reproduced and audited. Version selection favors operational stability, security support, and cross-component compatibility over adopting the newest release immediately.
+This repository pins the exact component versions that were verified in the running UAT2 environment so the implementation can be reproduced, audited, and promoted deliberately. Version selection favors tested compatibility and operational stability over automatic upgrades.
 
-## Selection policy
+## Selection and promotion policy
 
-1. Only stable releases are eligible; release candidates, beta, and nightly builds are excluded.
-2. The default target is the latest stable minor release minus two minor releases (**N-2**).
-3. Exact patch versions and container tags are pinned. Floating tags such as `latest` are prohibited.
-4. An actively supported LTS release takes precedence over N-2.
-5. Compatibility, security, or missing-distribution constraints may override N-2.
-6. Every exception must be documented in the baseline table.
-7. Versions do not change automatically. Each upgrade is tested in the lab, then UAT, before production.
-8. OpenSearch and OpenSearch Dashboards must always use the same version.
-9. Configuration, dashboards, and validation evidence must be committed with the version they were tested against.
+1. Exact patch versions and container tags are pinned; floating tags such as `latest` are prohibited.
+2. Versions do not change automatically.
+3. OpenSearch and OpenSearch Dashboards must use the same version.
+4. Collector configuration must be validated against the exact Collector image that will run it.
+5. Kubernetes CRDs and Operator configuration must remain compatible with the pinned Operator release.
+6. Application workloads must use exactly one Java-agent instrumentation path; embedded and Operator-injected agents must never be enabled simultaneously.
+7. Configuration, dashboards, and validation evidence are updated with the versions against which they were tested.
+8. Every upgrade is tested outside production first, then validated in UAT before promotion.
+9. Security fixes or compatibility constraints may justify a version change, but the change still follows the same validation lifecycle.
 
-## Validated and production baseline
+## Verified UAT2 baseline
 
-| Component | Validated lab version | Production target | Selection rationale |
-|---|---:|---:|---|
-| Ubuntu Server | 22.04 LTS | 22.04 LTS | Long-term support operating-system baseline |
-| RKE2 / Kubernetes | v1.35.7+rke2r1 | v1.35 supported patch | N-2 Kubernetes minor strategy; patch must be validated before rollout |
-| OpenSearch | 3.7.0 | 3.7.x | Validated compatibility baseline; one stable release behind 3.8 |
-| OpenSearch Dashboards | 3.7.0 | Same as OpenSearch | Required product-version alignment |
-| Data Prepper | 2.14.1 | 2.14.1 | N-2 line and validated pipeline behavior |
-| Prometheus | 3.10.0 | 3.13.2 LTS | Production uses the supported LTS line rather than an expired short-lived minor |
-| OpenTelemetry Collector Contrib | 0.156.0 | 0.156.0 | Exact N-2 selection from 0.158.0 |
-| OpenTelemetry Operator | 0.154.0 | 0.154.0 | Numeric N-2 is 0.155.0, but no corresponding official Helm chart is available; nearest older charted version selected |
-| OpenTelemetry Operator Helm chart | 0.119.0 | 0.119.0 | Official chart mapping for Operator 0.154.0 |
-| OpenTelemetry Java agent | 2.28.1 | 2.28.1 | N-2 line and already validated with the Spring Boot services |
-| Java runtime | 17.0.19 | Java 17 LTS | Application and agent compatibility |
-| Helm client | 3.20.0 | 3.20.x | Deployment client pinned for reproducible Helm rendering |
+| Component | Verified UAT2 version | Notes |
+|---|---:|---|
+| Ubuntu Server | 24.04.4 LTS | Observability and RKE2 hosts |
+| Linux kernel | 6.8.0-138-generic | Verified on sampled hosts |
+| RKE2 | v1.34.5+rke2r1 | Running cluster distribution |
+| Kubernetes | v1.34.5 | Bundled with verified RKE2 release |
+| kubectl | v1.34.5+rke2r1 | RKE2 client |
+| Kustomize | v5.7.1 | kubectl bundled version |
+| containerd | v2.1.5-k3s1 | RKE2 container runtime |
+| crictl | v1.34.0 | CRI client |
+| Helm | v3.20.1 | Deployment client |
+| OpenSearch | 3.6.0 | Verified running datastore |
+| OpenSearch Dashboards | 3.6.0 | Kept aligned with OpenSearch |
+| Lucene | 10.4.0 | Reported by OpenSearch 3.6.0 |
+| Data Prepper | 2.16.0 | Trace/log processing pipeline |
+| Prometheus | 3.14.0 | Native systemd service on observability host |
+| Node Exporter | 1.12.1 | Host metrics |
+| kube-state-metrics | v2.18.0 | Kubernetes state metrics |
+| Fluent Bit | 5.1.1 | Kubernetes stdout log collection |
+| OpenTelemetry Collector K8s | 0.158.0 | Central OTLP gateway |
+| OpenTelemetry Operator | 0.157.0 | Cluster instrumentation management |
+| OpenTelemetry Java agent | 2.30.0 | Verified across instrumented running services |
+| telemetrygen | 0.158.0 | Validation/test workload |
+| Java runtime on observability host | 17.0.20 | Data Prepper/runtime host baseline |
 
-## Documented exceptions
-
-### OpenSearch 3.7
-
-OpenSearch 3.8 was released on 2026-08-04. Strict N-2 would now point to 3.6, but the complete observability pipeline has already been validated on 3.7. Downgrading a working datastore merely to satisfy a numeric rule would introduce migration risk without improving supportability. Version 3.7 is therefore retained as an explicit, reviewed stability exception.
-
-### Prometheus 3.13 LTS
-
-Prometheus minor releases normally have short maintenance periods. Prometheus 3.13 is an LTS line supported through July 2027. Production therefore targets 3.13.2 LTS instead of retaining the lab's 3.10.0 release. The upgrade remains pending lab and UAT validation.
-
-### OpenTelemetry Operator 0.154
-
-Operator 0.155.0 is the numerical N-2 target, but the official Helm repository does not provide a chart mapping to that application version. Chart 0.119.0 / Operator 0.154.0 is the nearest older available and compatible pairing.
-
-## Upgrade lifecycle
-
-1. Review upstream release notes, support status, CVEs, and breaking changes.
-2. Confirm compatibility between OpenSearch, Dashboards, Data Prepper, OpenTelemetry, Prometheus, Kubernetes, and Java.
-3. Update `versions.env` in a feature branch.
-4. Deploy to the lab and run health, ingestion, correlation, RED-metric, SLO, and failure-recovery tests.
-5. Record evidence and rollback instructions.
-6. Promote the same immutable versions to UAT.
-7. Observe UAT for the agreed stability period.
-8. Obtain production change approval.
-9. Back up stateful components and deploy through a controlled rollout.
-10. Verify service health and keep the previous supported version available for rollback.
+The authoritative machine-readable version list is [`versions.env`](../versions.env).
 
 ## Compatibility invariants
 
 - OpenSearch Dashboards version equals OpenSearch version.
-- Application pods use one instrumentation method only; an embedded Java agent and Operator injection must never be enabled together.
-- The Collector configuration must be validated against the pinned Collector build.
-- Kubernetes CRDs must match the pinned Operator/chart release.
-- No credential, private key, token, internal production address, or real customer data may be committed.
+- Application pods use one instrumentation method only.
+- A business identifier never substitutes for a real OpenTelemetry traceId.
+- The Collector configuration is validated against the pinned Collector build before rollout.
+- Data Prepper pipeline syntax is validated before service restart.
+- Kubernetes CRDs/configuration remain compatible with the pinned Operator version.
+- No credential, private key, token, internal environment address, real customer identifier, or real transaction data is committed.
 
-## Authoritative release references
+## Upgrade lifecycle
 
-- [OpenSearch release schedule and maintenance policy](https://opensearch.org/releases/)
-- [OpenSearch artifacts by version](https://opensearch.org/artifacts/by-version/)
-- [Prometheus downloads](https://prometheus.io/download/)
-- [Prometheus LTS policy](https://prometheus.io/docs/introduction/release-cycle/)
-- [OpenTelemetry Collector releases](https://github.com/open-telemetry/opentelemetry-collector-releases/releases)
-- [OpenTelemetry Operator releases](https://github.com/open-telemetry/opentelemetry-operator/releases)
-- [OpenTelemetry Operator Helm chart](https://github.com/open-telemetry/opentelemetry-helm-charts/tree/main/charts/opentelemetry-operator)
+1. Review release notes, security advisories, support status, and breaking changes.
+2. Confirm cross-component compatibility.
+3. Update `versions.env` in a feature branch.
+4. Validate configuration syntax before rollout.
+5. Deploy to a non-production environment.
+6. Run ingestion, trace-correlation, Kafka propagation, log normalization, metrics, dashboard, and failure-recovery checks.
+7. Record evidence and rollback instructions.
+8. Promote the exact tested versions to UAT.
+9. Observe the agreed soak period and review resource usage.
+10. Obtain production change approval, back up stateful components, and perform a controlled rollout.
+11. Verify health, telemetry continuity, retention, alerting, and rollback readiness after deployment.
+
+## Current production-readiness status
+
+The UAT2 functional baseline is established. Production promotion remains gated by RBAC, alerting, tuning/capacity, TLS/authentication, secret management, backup/restore validation, explicit service-map retention, and representative failure/soak testing.
+
+See [`08-uat2-implementation-status.md`](08-uat2-implementation-status.md) for the implementation evidence and remaining gates.
