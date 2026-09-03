@@ -2,76 +2,105 @@
 
 A version-pinned, progressively validated observability platform for RKE2 and Java microservices. The design targets banking environments with large Kubernetes application fleets while keeping the stateful observability services outside the application cluster.
 
-This implementation replaces the repository's former SigNoz/Grafana experiment. **SigNoz and Grafana are not components of this implementation.**
+This implementation replaces the repository's former SigNoz/Grafana experiment. **SigNoz and Grafana are not components of the current validated platform.**
 
-## Current stack
+## Current validated UAT2 stack
 
-| Layer | Component | Validated version | Responsibility |
+| Layer | Component | Verified version | Responsibility |
 |---|---|---:|---|
-| Application | OpenTelemetry Java agent | 2.28.1 | Automatic traces, correlated logs, and runtime/application metrics |
-| Kubernetes | OpenTelemetry Operator | 0.154.0 | Opt-in agent injection for agentless images |
-| Kubernetes | OpenTelemetry Collector Contrib | 0.156.0 | OTLP gateway, Kubernetes enrichment, and signal routing |
-| Kubernetes | Fluent Bit | 4.1.0 | Container stdout collection for workloads not exporting OTLP logs |
-| Processing | Data Prepper | 2.14.1 | Trace/log ingestion and v2 service-map generation |
-| Metrics | Prometheus | 3.10.0 lab; 3.13.2 LTS production target | Metrics storage, RED rules, SLO calculations, and reporting metrics |
-| Storage and UI | OpenSearch and OpenSearch Dashboards | 3.7.0 | Logs, traces, application maps, dashboards, and investigation |
-| Platform | RKE2 / Kubernetes | v1.35.7+rke2r1 / v1.35.7 | Application orchestration |
+| Application | OpenTelemetry Java agent | 2.30.0 | Automatic distributed tracing and trace/span context propagation |
+| Kubernetes | OpenTelemetry Operator | 0.157.0 | Cluster-level instrumentation management |
+| Kubernetes | OpenTelemetry Collector K8s | 0.158.0 | OTLP gateway, Kubernetes enrichment, and telemetry routing |
+| Kubernetes | Fluent Bit | 5.1.1 | Container stdout collection and Kubernetes log forwarding |
+| Processing | Data Prepper | 2.16.0 | Trace/log ingestion, parsing, normalization, and service-map processing |
+| Metrics | Prometheus | 3.14.0 | Metrics storage, PromQL, RED/SLO inputs, and monitoring APIs |
+| Metrics | Node Exporter | 1.12.1 | Host metrics |
+| Metrics | kube-state-metrics | v2.18.0 | Kubernetes object/state metrics |
+| Storage and UI | OpenSearch / OpenSearch Dashboards | 3.6.0 | Logs, traces, dashboards, service maps, and investigation |
+| Search engine | Lucene | 10.4.0 | OpenSearch indexing/search engine |
+| Platform | RKE2 / Kubernetes | v1.34.5+rke2r1 / v1.34.5 | Application orchestration |
 
-See [Version and Lifecycle Policy](docs/01-version-policy.md) for the selection rules and production promotion process.
+The exact machine-verified baseline is recorded in [`versions.env`](versions.env).
 
 ## Architecture
 
 ```mermaid
 flowchart TB
     subgraph RKE2["RKE2 application cluster"]
-        Apps["Java microservices"]
-        FB["Fluent Bit DaemonSet"]
-        Operator["OpenTelemetry Operator"]
-        Collector["OpenTelemetry Collector gateway"]
-
-        Operator -. "opt-in injection" .-> Apps
-        Apps -->|"OTLP traces, logs, metrics"| Collector
-        FB -->|"stdout logs for non-OTLP workloads"| Collector
+        Apps["Java microservices\nOTEL Java Agent 2.30.0"]
+        FB["Fluent Bit 5.1.1"]
+        Operator["OTEL Operator 0.157.0"]
+        Collector["OTEL Collector K8s 0.158.0"]
+        KSM["kube-state-metrics 2.18.0"]
     end
 
-    subgraph OBS["Dedicated observability platform"]
-        DP["Data Prepper"]
-        Prom["Prometheus"]
-        OS["OpenSearch"]
-        UI["OpenSearch Dashboards"]
+    subgraph OBS["Dedicated observability host"]
+        DP["Data Prepper 2.16.0"]
+        Prom["Prometheus 3.14.0"]
+        Node["Node Exporter 1.12.1"]
+        OS["OpenSearch 3.6.0"]
+        UI["OpenSearch Dashboards 3.6.0"]
+        DevSearch["Developer Observability Search"]
 
         DP --> OS
         OS --> UI
         Prom --> UI
+        Node --> Prom
+        DevSearch --> OS
+        DevSearch --> UI
     end
 
-    Collector -->|"traces and logs"| DP
-    Collector -->|"remote-write metrics"| Prom
+    Apps -->|"OTLP traces"| Collector
+    FB -->|"Kubernetes stdout logs"| DP
+    Collector -->|"traces"| DP
+    KSM -->|"scrape"| Prom
 ```
 
-OpenSearch, OpenSearch Dashboards, Data Prepper, and Prometheus run on dedicated observability infrastructure. The Operator and Collector run once per Kubernetes cluster—not once per application or node.
+OpenSearch, OpenSearch Dashboards, Data Prepper, Prometheus, Node Exporter, and the developer-search helper run on dedicated observability infrastructure. The OpenTelemetry Operator, Collector, Fluent Bit, and kube-state-metrics run in RKE2.
 
-For the production topology, failure domains, scaling boundaries, and network flows, read [Scalable Observability Architecture](docs/02-architecture.md).
+## What has been validated
 
-## Instrumentation modes
+The UAT2 implementation has demonstrated:
 
-Every Java container must run exactly one OpenTelemetry Java agent.
+- OpenTelemetry Java agent 2.30.0 running consistently across instrumented Java services;
+- distributed trace propagation across HTTP services and Kafka producer/consumer boundaries;
+- stable traceId propagation with changing spanId and correct parentSpanId relationships;
+- Kubernetes-enriched traces through the central Collector;
+- centralized container logs through Fluent Bit and Data Prepper;
+- Data Prepper parsing and normalization for structured trace/span fields;
+- additive business-correlation normalization using existing application data without inventing trace IDs;
+- ANSI terminal escape removal from newly ingested log messages;
+- OpenSearch log and trace retention policies attached and healthy;
+- Prometheus host/Kubernetes metrics collection;
+- OpenSearch Dashboards workspaces and developer-investigation dashboards;
+- a custom developer search interface for endpoint, trace, phone/account-assisted correlation, and broad log search;
+- trace-based navigation from business identifiers when a real correlated traceId exists.
 
-| Application image | Mode | Rule |
-|---|---|---|
-| Already starts with `-javaagent` | Embedded agent | Configure OTLP environment; never add Operator injection |
-| Contains no agent | Operator injection | Add the explicit `inject-java` annotation |
+## Correlation model
 
-Applications exporting logs directly through OTLP use `fluentbit.io/exclude: "true"` to prevent Fluent Bit from sending an uncorrelated duplicate.
+A business identifier is a lookup key, not a replacement for distributed tracing.
 
-See [Kubernetes Telemetry Onboarding](docs/05-kubernetes-telemetry-onboarding.md) for both manifests, the double-agent guardrail, validation, and rollback.
+```text
+phone/account/endpoint
+        |
+        v
+structured log/trace attributes
+        |
+        v
+real OpenTelemetry traceId
+        |
+        +--> full distributed trace
+        +--> correlated logs
+```
+
+The platform never manufactures trace IDs. If a service emits logs without trace context, those logs remain searchable but cannot be presented as part of a distributed trace until the service is instrumented.
 
 ## Repository layout
 
 ```text
 .
-├── compose.yaml                         # Single-node OpenSearch lab only
-├── dashboards/                         # OpenSearch Dashboards export policy
+├── compose.yaml
+├── dashboards/
 ├── docs/
 │   ├── 01-version-policy.md
 │   ├── 02-architecture.md
@@ -79,74 +108,34 @@ See [Kubernetes Telemetry Onboarding](docs/05-kubernetes-telemetry-onboarding.md
 │   ├── 04-lab-preflight-validation.md
 │   ├── 05-kubernetes-telemetry-onboarding.md
 │   ├── 06-observability-host-bootstrap.md
-│   └── 07-validation-and-evidence.md
-├── evidence/                           # Evidence policy; generated output stays local
+│   ├── 07-validation-and-evidence.md
+│   └── 08-uat2-implementation-status.md
+├── evidence/
 ├── kubernetes/
-│   ├── collector/                       # Collector, Service, RBAC, and configuration
-│   ├── examples/                        # Mutually exclusive Java onboarding modes
-│   ├── instrumentation/                 # Shared opt-in Instrumentation resource
-│   └── operator/                        # Pinned Operator Helm values
+│   ├── collector/
+│   ├── examples/
+│   ├── instrumentation/
+│   └── operator/
 ├── prometheus/
-│   └── rules/                           # Platform alerts, RED, SLO, and report rules
+│   └── rules/
 ├── scripts/
-│   └── validate-platform.sh             # Read-only end-to-end acceptance checks
-├── prometheus.yml                       # Remote-write receiver and local scrape baseline
-└── versions.env                         # Frozen component baseline
+│   └── validate-platform.sh
+├── prometheus.yml
+└── versions.env
 ```
 
-## Validated results
+## Next hardening phase
 
-The functional lab has demonstrated:
+Before production promotion, the remaining focus is:
 
-- stable RKE2 operation through a five-minute validation window;
-- a healthy, pinned Operator and Collector;
-- least-privilege Collector Kubernetes RBAC;
-- Kubernetes metadata enrichment across traces, logs, and metrics;
-- a gateway-to-payment distributed trace and v2 service-map relationship;
-- trace- and span-correlated application logs;
-- duplicate-log prevention between OTLP and Fluent Bit;
-- automatic Prometheus reporting discovery for newly instrumented services;
-- request, 4xx, 5xx, latency, availability, and error-budget calculations.
+1. **RBAC and access control** — OpenSearch/OpenSearch Dashboards roles, least-privilege workspace/data access, service credentials, and admin separation.
+2. **Alerting** — infrastructure, Kubernetes, ingestion, OpenSearch capacity, application RED/SLO, and pipeline-failure alerts with ownership and runbooks.
+3. **Tuning and capacity** — OpenSearch heap/shards/storage, Data Prepper buffers/batches, Prometheus retention and memory, Collector resources, Fluent Bit buffering, and representative load testing.
+4. **Security hardening** — TLS/authentication on cross-host telemetry paths, NetworkPolicies/firewalls, secret management, and credential rotation.
+5. **Recovery** — snapshots/backups, restore validation, retention verification after indices actually cross their delete threshold, and documented rollback procedures.
 
-This is a validated functional baseline, not a claim that the single-node lab topology is production ready.
+## Security and publication policy
 
-## Documentation path
+This public repository must never contain internal addresses, hostnames, usernames, passwords, tokens, certificates, kubeconfigs, customer phone/account values, transaction IDs, or real production traces. Environment-specific values belong in private overlays or an approved secrets manager.
 
-Read the repository in this order:
-
-1. [Version and Lifecycle Policy](docs/01-version-policy.md)
-2. [Scalable Observability Architecture](docs/02-architecture.md)
-3. [Infrastructure Prerequisites](docs/03-infrastructure-prerequisites.md)
-4. [Lab Preflight Validation](docs/04-lab-preflight-validation.md)
-5. [Kubernetes Telemetry Onboarding](docs/05-kubernetes-telemetry-onboarding.md)
-6. [Dedicated Observability Host Bootstrap](docs/06-observability-host-bootstrap.md)
-7. [Validation and Evidence](docs/07-validation-and-evidence.md)
-
-## Lab-only OpenSearch start
-
-The root [compose.yaml](compose.yaml) starts only OpenSearch and OpenSearch Dashboards for single-node functional testing. It is not the production deployment method.
-
-```bash
-export OPENSEARCH_INITIAL_ADMIN_PASSWORD='replace-with-a-strong-random-secret'
-docker compose config
-docker compose up -d
-```
-
-Do not store the password in Git or shell history in a real environment. Data Prepper and Prometheus are managed separately in the validated lab and will receive their own sanitized installation stages.
-
-## Production gates still open
-
-Before production promotion, the project still requires:
-
-- Collector gateway high availability and capacity tests;
-- authenticated TLS or mTLS for every cross-host telemetry path;
-- Kubernetes NetworkPolicies and host firewall rules;
-- external secret management and credential rotation;
-- OpenSearch multi-node sizing, retention, snapshots, and recovery testing;
-- Prometheus LTS upgrade validation, retention, backup, and HA decision;
-- alert routing, notification ownership, and runbooks;
-- UAT soak, failure, and rollback tests at representative application scale.
-
-## Security
-
-This public repository must never contain production addresses, hostnames, usernames, passwords, tokens, certificates, kubeconfigs, trace IDs, transaction IDs, or customer data. Environment-specific values belong in private overlays or an approved secrets manager.
+The repository uses sanitized examples and version/documentation evidence only.
