@@ -2,6 +2,8 @@
 set -Eeuo pipefail
 
 MODE="${1:-}"
+REFERENCE_HOST="${REFERENCE_HOST:-}"
+ALLOW_INACTIVE_REFERENCE="${ALLOW_INACTIVE_REFERENCE:-0}"
 
 info() { printf '\n=== %s ===\n' "$*"; }
 die()  { printf '[ERROR] %s\n' "$*" >&2; exit 1; }
@@ -12,6 +14,22 @@ case "$MODE" in
 esac
 
 [[ "${EUID}" -eq 0 ]] || die "Run as root so protected configuration can be inspected safely."
+
+if [[ "$MODE" == "--capture" ]]; then
+  [[ -n "$REFERENCE_HOST" ]] || die "Set REFERENCE_HOST to the expected reference hostname before capture."
+  [[ "$(hostname -s)" == "$REFERENCE_HOST" ]] || die "Refusing capture: expected reference host '$REFERENCE_HOST', found '$(hostname -s)'."
+
+  if [[ "$ALLOW_INACTIVE_REFERENCE" != "1" ]]; then
+    inactive=()
+    for service in opensearch opensearch-dashboards data-prepper prometheus alertmanager process-exporter; do
+      state="$(systemctl is-active "$service" 2>/dev/null || true)"
+      [[ "$state" == "active" ]] || inactive+=("$service:$state")
+    done
+    if (( ${#inactive[@]} > 0 )); then
+      die "Reference services are not all active: ${inactive[*]}. Set ALLOW_INACTIVE_REFERENCE=1 only for an intentional exceptional capture."
+    fi
+  fi
+fi
 
 redact_stream() {
   sed -E \
@@ -50,6 +68,11 @@ REFERENCE RUNTIME CAPTURE PLAN
 
 Read-only capture. No service is restarted, reloaded, enabled, disabled, or modified.
 
+Capture safety gates:
+  - REFERENCE_HOST must be set and must match the current short hostname
+  - core reference services must be active by default
+  - ALLOW_INACTIVE_REFERENCE=1 is an explicit exceptional override
+
 The report includes:
   - exact installed component versions
   - systemd unit definitions and ExecStart lines
@@ -83,7 +106,14 @@ if [[ -f /opt/opensearch-dashboards/package.json ]]; then
   printf 'OpenSearch Dashboards: '
   jq -r '.version' /opt/opensearch-dashboards/package.json
 fi
-/opt/data-prepper/bin/data-prepper --version 2>&1 | head -5 || true
+if [[ -d /opt/data-prepper/lib ]]; then
+  dp_marker="$(find /opt/data-prepper/lib -maxdepth 1 -type f -name 'data-prepper-pipeline-parser-*.jar' -printf '%f\n' 2>/dev/null | head -1 || true)"
+  if [[ -n "$dp_marker" ]]; then
+    printf 'Data Prepper marker: %s\n' "$dp_marker"
+  else
+    printf 'Data Prepper marker: not found\n'
+  fi
+fi
 /opt/prometheus/prometheus --version 2>&1 | head -2 || true
 /opt/alertmanager/alertmanager --version 2>&1 | head -2 || true
 /usr/local/bin/node_exporter --version 2>&1 | head -2 || true
