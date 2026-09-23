@@ -1,0 +1,4 @@
+[Service]
+# Enable only after /opt/data-prepper/native/snappy-glibc/libsnappyjava.so
+# has been installed and validated for the target host.
+Environment="JAVA_OPTS=-Dorg.xerial.snappy.lib.path=/opt/data-prepper/native/snappy-glibc -Dorg.xerial.snappy.lib.name=libsnappyjava.so"
