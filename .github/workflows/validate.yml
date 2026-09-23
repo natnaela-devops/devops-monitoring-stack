@@ -1,0 +1,43 @@
+name: Repository validation
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Bash syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r script; do
+            echo "Checking $script"
+            bash -n "$script"
+          done < <(find scripts -maxdepth 1 -type f -name '*.sh' | sort)
+
+      - name: Version invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          source versions.env
+          test "$OPENSEARCH_VERSION" = "$OPENSEARCH_DASHBOARDS_VERSION"
+          test -n "$PROMETHEUS_VERSION"
+          test -n "$ALERTMANAGER_VERSION"
+          test -n "$NODE_EXPORTER_VERSION"
+          test -n "$PROCESS_EXPORTER_VERSION"
+
+      - name: Public-repository secret guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RIEn --exclude-dir=.git             '(BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|10\.1\.22\.|Wbvl8L|5293821307|enatbank|act\.com\.et)' .; then
+            echo "Potential environment-specific or secret material detected."
+            exit 1
+          fi
