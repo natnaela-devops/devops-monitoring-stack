@@ -110,7 +110,7 @@ PLAN
 info "Installing explicit prerequisite packages"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y --no-install-recommends ca-certificates curl tar gzip jq gnupg
+apt-get install -y --no-install-recommends ca-certificates curl tar gzip jq gnupg openjdk-17-jre-headless
 
 for cmd in curl tar sha256sum gpg awk grep find systemctl; do
   command -v "$cmd" >/dev/null 2>&1 || die "required command missing after prerequisite installation: $cmd"
@@ -127,15 +127,15 @@ ensure_user() {
 }
 
 ensure_user opensearch /var/lib/opensearch
-ensure_user opensearch-dashboards /var/lib/opensearch-dashboards
-ensure_user data-prepper /var/lib/data-prepper
+ensure_user dataprepper /var/lib/data-prepper
 ensure_user prometheus /var/lib/prometheus
 ensure_user alertmanager /var/lib/alertmanager
-ensure_user process-exporter /var/lib/process-exporter
+ensure_user node_exporter /var/lib/node_exporter
 
 install -d -o opensearch -g opensearch -m 0750 /var/lib/opensearch /var/log/opensearch
-install -d -o opensearch-dashboards -g opensearch-dashboards -m 0750 /var/lib/opensearch-dashboards /var/log/opensearch-dashboards
-install -d -o data-prepper -g data-prepper -m 0750 /var/lib/data-prepper /var/log/data-prepper
+install -d -o opensearch -g opensearch -m 0750 /data/opensearch /data/logs/opensearch
+install -d -o dataprepper -g dataprepper -m 0750 /var/lib/data-prepper /var/log/data-prepper /opt/data-prepper/data
+install -d -o dataprepper -g dataprepper -m 0750 /opt/data-prepper/data/otel-apm-service-map
 install -d -o prometheus -g prometheus -m 0750 /data/prometheus
 install -d -o alertmanager -g alertmanager -m 0750 /data/alertmanager
 install -d -o root -g root -m 0755 /etc/prometheus/rules /etc/alertmanager/templates /etc/process-exporter
@@ -218,7 +218,7 @@ else
     || die "OpenSearch Dashboards signature verification failed"
   ok "OpenSearch Dashboards signature verified"
   extract_to "$WORK/$OSD_ARCHIVE" /opt/opensearch-dashboards
-  chown -R opensearch-dashboards:opensearch-dashboards /opt/opensearch-dashboards
+  chown -R opensearch:opensearch /opt/opensearch-dashboards
 fi
 
 DATA_PREPPER_OBSERVED_SHA256="$DATA_PREPPER_SHA256"
@@ -232,7 +232,7 @@ else
   info "Data Prepper observed SHA256: $DATA_PREPPER_OBSERVED_SHA256"
   verify_sha256 "$WORK/$DP_ARCHIVE" "$DATA_PREPPER_SHA256"
   extract_to "$WORK/$DP_ARCHIVE" /opt/data-prepper
-  chown -R data-prepper:data-prepper /opt/data-prepper
+  chown -R dataprepper:dataprepper /opt/data-prepper
 fi
 
 if [[ -e /opt/prometheus ]]; then
@@ -244,7 +244,7 @@ else
   fetch "$PROM_URL" "$WORK/$PROM_ARCHIVE"
   verify_sha256 "$WORK/$PROM_ARCHIVE" "$PROMETHEUS_SHA256"
   extract_to "$WORK/$PROM_ARCHIVE" /opt/prometheus
-  chown -R root:root /opt/prometheus
+  chown -R prometheus:prometheus /opt/prometheus
 fi
 
 if [[ -e /opt/alertmanager ]]; then
@@ -273,6 +273,12 @@ else
   install -o root -g root -m 0755 "$NODE_BIN" /usr/local/bin/node_exporter
 fi
 
+chown -R opensearch:opensearch /opt/opensearch
+chown -R opensearch:opensearch /opt/opensearch-dashboards
+chown -R dataprepper:dataprepper /opt/data-prepper
+chown -R prometheus:prometheus /opt/prometheus
+chown -R root:root /opt/alertmanager
+
 if [[ -x /usr/local/bin/process-exporter ]]; then
   /usr/local/bin/process-exporter --version 2>&1 | head -1 | grep -q "version ${PROCESS_EXPORTER_VERSION}" \
     || die "existing process-exporter installation is not ${PROCESS_EXPORTER_VERSION}"
@@ -291,11 +297,15 @@ else
 fi
 
 info "Installing systemd unit definitions without starting services"
-for unit in opensearch.service opensearch-dashboards.service data-prepper.service prometheus.service alertmanager.service process-exporter.service; do
+for unit in opensearch.service opensearch-dashboards.service data-prepper.service prometheus.service alertmanager.service node_exporter.service process-exporter.service; do
   src="$REPO_ROOT/observability-host/systemd/$unit"
   [[ -f "$src" ]] || die "missing unit in repository: $src"
   install -o root -g root -m 0644 "$src" "/etc/systemd/system/$unit"
 done
+
+install -d -o root -g root -m 0755 /etc/systemd/system/prometheus.service.d
+install -o root -g root -m 0644   "$REPO_ROOT/observability-host/systemd/prometheus.service.d/apm-remote-write.conf"   /etc/systemd/system/prometheus.service.d/apm-remote-write.conf
+
 systemctl daemon-reload
 
 bash "$REPO_ROOT/scripts/verify-reference-binaries.sh"
