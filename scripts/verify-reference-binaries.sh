@@ -31,13 +31,20 @@ ok "node_exporter ${NODE_EXPORTER_VERSION}"
 /usr/local/bin/process-exporter --version 2>&1 | head -1 | grep -q "version ${PROCESS_EXPORTER_VERSION}" || die "process-exporter version mismatch"
 ok "process-exporter ${PROCESS_EXPORTER_VERSION}"
 
-for unit in opensearch opensearch-dashboards data-prepper prometheus alertmanager process-exporter; do
+for unit in opensearch opensearch-dashboards data-prepper prometheus alertmanager node_exporter process-exporter; do
   systemctl cat "$unit" >/dev/null 2>&1 || die "systemd unit missing: $unit"
 done
 ok "systemd unit definitions present"
 
+[[ "$(stat -c '%U:%G' /opt/opensearch)" == "opensearch:opensearch" ]] || die "OpenSearch ownership mismatch"
+[[ "$(stat -c '%U:%G' /opt/opensearch-dashboards)" == "opensearch:opensearch" ]] || die "Dashboards ownership mismatch"
+[[ "$(stat -c '%U:%G' /opt/data-prepper)" == "dataprepper:dataprepper" ]] || die "Data Prepper ownership mismatch"
+[[ "$(stat -c '%U:%G' /opt/prometheus)" == "prometheus:prometheus" ]] || die "Prometheus ownership mismatch"
+[[ "$(stat -c '%U:%G' /opt/alertmanager)" == "root:root" ]] || die "Alertmanager ownership mismatch"
+ok "reference ownership contract present"
+
 unexpected_active=0
-for unit in opensearch opensearch-dashboards data-prepper prometheus alertmanager process-exporter; do
+for unit in opensearch opensearch-dashboards data-prepper prometheus alertmanager node_exporter process-exporter; do
   state="$(systemctl is-active "$unit" 2>/dev/null || true)"
   if [[ "$state" == "active" || "$state" == "activating" ]]; then
     printf '[ERROR] service unexpectedly active during binary-only bootstrap: %s (%s)\n' "$unit" "$state" >&2
