@@ -134,8 +134,7 @@ ensure_user node_exporter /var/lib/node_exporter
 
 install -d -o opensearch -g opensearch -m 0750 /var/lib/opensearch /var/log/opensearch
 install -d -o opensearch -g opensearch -m 0750 /data/opensearch /data/logs/opensearch
-install -d -o dataprepper -g dataprepper -m 0750 /var/lib/data-prepper /var/log/data-prepper /opt/data-prepper/data
-install -d -o dataprepper -g dataprepper -m 0750 /opt/data-prepper/data/otel-apm-service-map
+install -d -o dataprepper -g dataprepper -m 0750 /var/lib/data-prepper /var/log/data-prepper
 install -d -o prometheus -g prometheus -m 0750 /data/prometheus
 install -d -o alertmanager -g alertmanager -m 0750 /data/alertmanager
 install -d -o root -g root -m 0755 /etc/prometheus/rules /etc/alertmanager/templates /etc/process-exporter
@@ -276,6 +275,7 @@ fi
 chown -R opensearch:opensearch /opt/opensearch
 chown -R opensearch:opensearch /opt/opensearch-dashboards
 chown -R dataprepper:dataprepper /opt/data-prepper
+install -d -o dataprepper -g dataprepper -m 0750 /opt/data-prepper/data /opt/data-prepper/data/otel-apm-service-map
 chown -R prometheus:prometheus /opt/prometheus
 chown -R root:root /opt/alertmanager
 
