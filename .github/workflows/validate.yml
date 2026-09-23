@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Bash syntax
         shell: bash
@@ -37,7 +37,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -RIEn --exclude-dir=.git             '(BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|10\.1\.22\.|Wbvl8L|5293821307|enatbank|act\.com\.et)' .; then
-            echo "Potential environment-specific or secret material detected."
-            exit 1
-          fi
+          pattern='(BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|10\.1\.22\.|Wbvl8L|5293821307|enatbank|act\.com\.et)'
+          found=0
+          while IFS= read -r -d '' file; do
+            # This workflow necessarily contains the deny-list pattern itself.
+            [[ "$file" == ".github/workflows/validate.yml" ]] && continue
+            if grep -nEI "$pattern" "$file"; then
+              echo "Potential environment-specific or secret material detected in: $file"
+              found=1
+            fi
+          done < <(git ls-files -z)
+          test "$found" -eq 0
