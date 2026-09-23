@@ -8,12 +8,17 @@ The script is read-only. It captures exact version, service, path, port, and
 configuration contracts while redacting lines containing passwords, tokens,
 secrets, Telegram bot tokens/chat IDs, and authorization values.
 
-Run:
+Run on the intended reference host:
 
 ```bash
 bash scripts/capture-reference-runtime.sh --plan
-bash scripts/capture-reference-runtime.sh --capture
+REFERENCE_HOST="$(hostname -s)" bash scripts/capture-reference-runtime.sh --capture
 ```
+
+The capture refuses to run if `REFERENCE_HOST` does not match the current host.
+It also requires OpenSearch, Dashboards, Data Prepper, Prometheus, Alertmanager,
+and process-exporter to be active by default. This prevents an inactive lab host
+from being mistaken for the operated reference environment.
 
 The output is operational evidence, not a public-repository artifact. It may
 still contain environment names, hostnames, addresses, certificate paths, and
