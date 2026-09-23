@@ -31,6 +31,7 @@ required_vars=(
   PROMETHEUS_SHA256
   ALERTMANAGER_SHA256
   NODE_EXPORTER_SHA256
+  DATA_PREPPER_SHA256
 )
 for var in "${required_vars[@]}"; do
   [[ -n "${!var:-}" ]] || die "required variable is empty: $var"
@@ -142,7 +143,7 @@ install -d -o root -g root -m 0755 /etc/prometheus/rules /etc/alertmanager/templ
 cat > /etc/sysctl.d/99-opensearch.conf <<'SYSCTL'
 vm.max_map_count=262144
 SYSCTL
-sysctl --system >/dev/null
+sysctl -q -w vm.max_map_count=262144 >/dev/null
 [[ "$(sysctl -n vm.max_map_count)" -ge 262144 ]] || die "vm.max_map_count did not apply"
 ok "vm.max_map_count configured"
 
@@ -190,61 +191,104 @@ GPG_HOME="$WORK/gnupg"
 mkdir -m 0700 "$GPG_HOME"
 gpg --batch --homedir "$GPG_HOME" --import "$WORK/opensearch-release.pgp" >/dev/null 2>&1
 
-fetch "$OS_URL" "$WORK/$OS_ARCHIVE"
-fetch "$OS_SIG_URL" "$WORK/$OS_ARCHIVE.sig"
-gpg --batch --homedir "$GPG_HOME" --verify "$WORK/$OS_ARCHIVE.sig" "$WORK/$OS_ARCHIVE" >/dev/null 2>&1 \
-  || die "OpenSearch signature verification failed"
-ok "OpenSearch signature verified"
-extract_to "$WORK/$OS_ARCHIVE" /opt/opensearch
-chown -R opensearch:opensearch /opt/opensearch
-
-fetch "$OSD_URL" "$WORK/$OSD_ARCHIVE"
-fetch "$OSD_SIG_URL" "$WORK/$OSD_ARCHIVE.sig"
-gpg --batch --homedir "$GPG_HOME" --verify "$WORK/$OSD_ARCHIVE.sig" "$WORK/$OSD_ARCHIVE" >/dev/null 2>&1 \
-  || die "OpenSearch Dashboards signature verification failed"
-ok "OpenSearch Dashboards signature verified"
-extract_to "$WORK/$OSD_ARCHIVE" /opt/opensearch-dashboards
-chown -R opensearch-dashboards:opensearch-dashboards /opt/opensearch-dashboards
-
-fetch "$DP_URL" "$WORK/$DP_ARCHIVE"
-DATA_PREPPER_OBSERVED_SHA256="$(sha256sum "$WORK/$DP_ARCHIVE" | awk '{print $1}')"
-info "Data Prepper observed SHA256: $DATA_PREPPER_OBSERVED_SHA256"
-if [[ -n "${DATA_PREPPER_SHA256:-}" ]]; then
-  verify_sha256 "$WORK/$DP_ARCHIVE" "$DATA_PREPPER_SHA256"
+if [[ -e /opt/opensearch ]]; then
+  [[ -x /opt/opensearch/bin/opensearch ]] || die "partial OpenSearch installation detected at /opt/opensearch"
+  /opt/opensearch/bin/opensearch --version 2>&1 | grep -q "Version: ${OPENSEARCH_VERSION}" \
+    || die "existing OpenSearch installation is not ${OPENSEARCH_VERSION}"
+  ok "OpenSearch ${OPENSEARCH_VERSION} already installed; skipping artifact extraction"
 else
-  warn "DATA_PREPPER_SHA256 is not pinned yet; exact official URL and extracted version will be verified, and this observed digest must be committed before v1.0.0 qualification"
+  fetch "$OS_URL" "$WORK/$OS_ARCHIVE"
+  fetch "$OS_SIG_URL" "$WORK/$OS_ARCHIVE.sig"
+  gpg --batch --homedir "$GPG_HOME" --verify "$WORK/$OS_ARCHIVE.sig" "$WORK/$OS_ARCHIVE" >/dev/null 2>&1 \
+    || die "OpenSearch signature verification failed"
+  ok "OpenSearch signature verified"
+  extract_to "$WORK/$OS_ARCHIVE" /opt/opensearch
+  chown -R opensearch:opensearch /opt/opensearch
 fi
-extract_to "$WORK/$DP_ARCHIVE" /opt/data-prepper
-chown -R data-prepper:data-prepper /opt/data-prepper
 
-fetch "$PROM_URL" "$WORK/$PROM_ARCHIVE"
-verify_sha256 "$WORK/$PROM_ARCHIVE" "$PROMETHEUS_SHA256"
-extract_to "$WORK/$PROM_ARCHIVE" /opt/prometheus
-chown -R root:root /opt/prometheus
+if [[ -e /opt/opensearch-dashboards ]]; then
+  [[ -f /opt/opensearch-dashboards/package.json ]] || die "partial Dashboards installation detected at /opt/opensearch-dashboards"
+  [[ "$(jq -r '.version' /opt/opensearch-dashboards/package.json)" == "$OPENSEARCH_DASHBOARDS_VERSION" ]] \
+    || die "existing Dashboards installation is not ${OPENSEARCH_DASHBOARDS_VERSION}"
+  ok "OpenSearch Dashboards ${OPENSEARCH_DASHBOARDS_VERSION} already installed; skipping artifact extraction"
+else
+  fetch "$OSD_URL" "$WORK/$OSD_ARCHIVE"
+  fetch "$OSD_SIG_URL" "$WORK/$OSD_ARCHIVE.sig"
+  gpg --batch --homedir "$GPG_HOME" --verify "$WORK/$OSD_ARCHIVE.sig" "$WORK/$OSD_ARCHIVE" >/dev/null 2>&1 \
+    || die "OpenSearch Dashboards signature verification failed"
+  ok "OpenSearch Dashboards signature verified"
+  extract_to "$WORK/$OSD_ARCHIVE" /opt/opensearch-dashboards
+  chown -R opensearch-dashboards:opensearch-dashboards /opt/opensearch-dashboards
+fi
 
-fetch "$AM_URL" "$WORK/$AM_ARCHIVE"
-verify_sha256 "$WORK/$AM_ARCHIVE" "$ALERTMANAGER_SHA256"
-extract_to "$WORK/$AM_ARCHIVE" /opt/alertmanager
-chown -R root:root /opt/alertmanager
+DATA_PREPPER_OBSERVED_SHA256="$DATA_PREPPER_SHA256"
+if [[ -e /opt/data-prepper ]]; then
+  find /opt/data-prepper/lib -maxdepth 1 -type f -name "data-prepper-pipeline-parser-${DATA_PREPPER_VERSION}.jar" -print -quit | grep -q . \
+    || die "existing Data Prepper installation is not ${DATA_PREPPER_VERSION}"
+  ok "Data Prepper ${DATA_PREPPER_VERSION} already installed; skipping artifact extraction"
+else
+  fetch "$DP_URL" "$WORK/$DP_ARCHIVE"
+  DATA_PREPPER_OBSERVED_SHA256="$(sha256sum "$WORK/$DP_ARCHIVE" | awk '{print $1}')"
+  info "Data Prepper observed SHA256: $DATA_PREPPER_OBSERVED_SHA256"
+  verify_sha256 "$WORK/$DP_ARCHIVE" "$DATA_PREPPER_SHA256"
+  extract_to "$WORK/$DP_ARCHIVE" /opt/data-prepper
+  chown -R data-prepper:data-prepper /opt/data-prepper
+fi
 
-fetch "$NODE_URL" "$WORK/$NODE_ARCHIVE"
-verify_sha256 "$WORK/$NODE_ARCHIVE" "$NODE_EXPORTER_SHA256"
-mkdir -p "$WORK/node"
-tar -xzf "$WORK/$NODE_ARCHIVE" -C "$WORK/node"
-NODE_BIN="$(find "$WORK/node" -type f -name node_exporter -perm -u+x | head -1)"
-[[ -n "$NODE_BIN" ]] || die "node_exporter binary not found after extraction"
-install -o root -g root -m 0755 "$NODE_BIN" /usr/local/bin/node_exporter
+if [[ -e /opt/prometheus ]]; then
+  [[ -x /opt/prometheus/prometheus ]] || die "partial Prometheus installation detected at /opt/prometheus"
+  /opt/prometheus/prometheus --version 2>&1 | head -1 | grep -q "version ${PROMETHEUS_VERSION}" \
+    || die "existing Prometheus installation is not ${PROMETHEUS_VERSION}"
+  ok "Prometheus ${PROMETHEUS_VERSION} already installed; skipping artifact extraction"
+else
+  fetch "$PROM_URL" "$WORK/$PROM_ARCHIVE"
+  verify_sha256 "$WORK/$PROM_ARCHIVE" "$PROMETHEUS_SHA256"
+  extract_to "$WORK/$PROM_ARCHIVE" /opt/prometheus
+  chown -R root:root /opt/prometheus
+fi
 
-fetch "$PROC_URL" "$WORK/$PROC_ARCHIVE"
-fetch "$PROC_CHECKSUMS_URL" "$WORK/process-exporter-checksums.txt"
-PROC_EXPECTED="$(awk -v name="$PROC_ARCHIVE" '$2 == name {print $1}' "$WORK/process-exporter-checksums.txt")"
-[[ -n "$PROC_EXPECTED" ]] || die "process-exporter checksum not found in upstream checksums.txt"
-verify_sha256 "$WORK/$PROC_ARCHIVE" "$PROC_EXPECTED"
-mkdir -p "$WORK/process"
-tar -xzf "$WORK/$PROC_ARCHIVE" -C "$WORK/process"
-PROC_BIN="$(find "$WORK/process" -type f -name process-exporter -perm -u+x | head -1)"
-[[ -n "$PROC_BIN" ]] || die "process-exporter binary not found after extraction"
-install -o root -g root -m 0755 "$PROC_BIN" /usr/local/bin/process-exporter
+if [[ -e /opt/alertmanager ]]; then
+  [[ -x /opt/alertmanager/alertmanager ]] || die "partial Alertmanager installation detected at /opt/alertmanager"
+  /opt/alertmanager/alertmanager --version 2>&1 | head -1 | grep -q "version ${ALERTMANAGER_VERSION}" \
+    || die "existing Alertmanager installation is not ${ALERTMANAGER_VERSION}"
+  ok "Alertmanager ${ALERTMANAGER_VERSION} already installed; skipping artifact extraction"
+else
+  fetch "$AM_URL" "$WORK/$AM_ARCHIVE"
+  verify_sha256 "$WORK/$AM_ARCHIVE" "$ALERTMANAGER_SHA256"
+  extract_to "$WORK/$AM_ARCHIVE" /opt/alertmanager
+  chown -R root:root /opt/alertmanager
+fi
+
+if [[ -x /usr/local/bin/node_exporter ]]; then
+  /usr/local/bin/node_exporter --version 2>&1 | head -1 | grep -q "version ${NODE_EXPORTER_VERSION}" \
+    || die "existing node_exporter installation is not ${NODE_EXPORTER_VERSION}"
+  ok "node_exporter ${NODE_EXPORTER_VERSION} already installed; skipping artifact extraction"
+else
+  fetch "$NODE_URL" "$WORK/$NODE_ARCHIVE"
+  verify_sha256 "$WORK/$NODE_ARCHIVE" "$NODE_EXPORTER_SHA256"
+  mkdir -p "$WORK/node"
+  tar -xzf "$WORK/$NODE_ARCHIVE" -C "$WORK/node"
+  NODE_BIN="$(find "$WORK/node" -type f -name node_exporter -perm -u+x | head -1)"
+  [[ -n "$NODE_BIN" ]] || die "node_exporter binary not found after extraction"
+  install -o root -g root -m 0755 "$NODE_BIN" /usr/local/bin/node_exporter
+fi
+
+if [[ -x /usr/local/bin/process-exporter ]]; then
+  /usr/local/bin/process-exporter --version 2>&1 | head -1 | grep -q "version ${PROCESS_EXPORTER_VERSION}" \
+    || die "existing process-exporter installation is not ${PROCESS_EXPORTER_VERSION}"
+  ok "process-exporter ${PROCESS_EXPORTER_VERSION} already installed; skipping artifact extraction"
+else
+  fetch "$PROC_URL" "$WORK/$PROC_ARCHIVE"
+  fetch "$PROC_CHECKSUMS_URL" "$WORK/process-exporter-checksums.txt"
+  PROC_EXPECTED="$(awk -v name="$PROC_ARCHIVE" '$2 == name {print $1}' "$WORK/process-exporter-checksums.txt")"
+  [[ -n "$PROC_EXPECTED" ]] || die "process-exporter checksum not found in upstream checksums.txt"
+  verify_sha256 "$WORK/$PROC_ARCHIVE" "$PROC_EXPECTED"
+  mkdir -p "$WORK/process"
+  tar -xzf "$WORK/$PROC_ARCHIVE" -C "$WORK/process"
+  PROC_BIN="$(find "$WORK/process" -type f -name process-exporter -perm -u+x | head -1)"
+  [[ -n "$PROC_BIN" ]] || die "process-exporter binary not found after extraction"
+  install -o root -g root -m 0755 "$PROC_BIN" /usr/local/bin/process-exporter
+fi
 
 info "Installing systemd unit definitions without starting services"
 for unit in opensearch.service opensearch-dashboards.service data-prepper.service prometheus.service alertmanager.service process-exporter.service; do
