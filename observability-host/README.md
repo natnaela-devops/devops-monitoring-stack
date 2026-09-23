@@ -17,7 +17,10 @@ They intentionally contain no addresses, credentials, certificates, or environme
 | `systemd/data-prepper.service` | `/etc/systemd/system/data-prepper.service` | Pinned Data Prepper process definition |
 | `systemd/prometheus.service` | `/etc/systemd/system/prometheus.service` | Pinned Prometheus process definition |
 | `systemd/alertmanager.service` | `/etc/systemd/system/alertmanager.service` | Pinned Alertmanager process definition |
+| `systemd/node_exporter.service` | `/etc/systemd/system/node_exporter.service` | Reference node_exporter definition on port 9115 |
 | `systemd/process-exporter.service` | `/etc/systemd/system/process-exporter.service` | Pinned process-exporter definition |
+| `systemd/prometheus.service.d/apm-remote-write.conf` | `/etc/systemd/system/prometheus.service.d/apm-remote-write.conf` | Effective 5d/3GB Prometheus retention and remote-write receiver |
+| `systemd/data-prepper.service.d/snappy-glibc.conf.example` | Optional Data Prepper drop-in | Reference native Snappy override; enable only after the native library is installed and validated |
 
 Do not copy a template into service without first following [Dedicated Observability Host Bootstrap](../docs/06-observability-host-bootstrap.md).
 
@@ -33,3 +36,12 @@ bash scripts/bootstrap-reference-binaries.sh --apply
 ```
 
 The bootstrap installs the exact versions pinned in `versions.env`, verifies signed/checksummed artifacts where upstream verification material is available, installs canonical systemd unit definitions, and deliberately leaves all observability services stopped. Configuration and service activation are a separate qualification stage.
+
+## Runtime identity parity
+
+The reference runtime intentionally uses shared ownership for OpenSearch and
+Dashboards (`opensearch:opensearch`), `dataprepper:dataprepper` for Data
+Prepper, `prometheus:prometheus` for Prometheus, `alertmanager:alertmanager`
+for Alertmanager, `node_exporter:node_exporter` for node_exporter, and root for
+process-exporter. The binary bootstrap enforces these identities and leaves all
+services stopped until configuration validation is complete.
