@@ -27,3 +27,15 @@ capture.
 
 The configuration/activation installer must not be implemented from assumptions
 when a runtime contract can be measured from the reference environment.
+
+
+## Completeness checks
+
+Before configuration rendering is implemented, the reference capture must include:
+- the node_exporter unit if the reference host exposes node metrics;
+- Data Prepper trace, log, and internal API listener ports;
+- the actual Prometheus rule contents, not only filenames;
+- the actual Alertmanager message templates, with secret-bearing lines redacted.
+
+This avoids reproducing only the core services while silently omitting alerting,
+host-metrics, or log-ingestion behavior.
