@@ -25,6 +25,13 @@ if [[ "$MODE" == "--capture" ]]; then
       state="$(systemctl is-active "$service" 2>/dev/null || true)"
       [[ "$state" == "active" ]] || inactive+=("$service:$state")
     done
+    for node_unit in node_exporter prometheus-node-exporter node-exporter; do
+      if systemctl cat "$node_unit" >/dev/null 2>&1; then
+        state="$(systemctl is-active "$node_unit" 2>/dev/null || true)"
+        [[ "$state" == "active" ]] || inactive+=("$node_unit:$state")
+        break
+      fi
+    done
     if (( ${#inactive[@]} > 0 )); then
       die "Reference services are not all active: ${inactive[*]}. Set ALLOW_INACTIVE_REFERENCE=1 only for an intentional exceptional capture."
     fi
@@ -83,6 +90,9 @@ The report includes:
   - Prometheus configuration
   - Alertmanager configuration
   - process-exporter configuration
+  - node_exporter service contract when present
+  - Prometheus rule contents
+  - Alertmanager template contents
   - OpenSearch security/certificate file inventory only (no key/cert contents)
 
 Lines containing passwords, tokens, secrets, Telegram bot tokens/chat IDs, or
@@ -129,8 +139,24 @@ for service in opensearch opensearch-dashboards data-prepper prometheus alertman
   systemctl cat "$service" --no-pager 2>/dev/null | redact_stream || true
 done
 
+info "NODE EXPORTER SERVICE CONTRACT"
+node_unit=""
+for candidate in node_exporter prometheus-node-exporter node-exporter; do
+  if systemctl cat "$candidate" >/dev/null 2>&1; then
+    node_unit="$candidate"
+    break
+  fi
+done
+if [[ -n "$node_unit" ]]; then
+  systemctl show "$node_unit" -p LoadState -p ActiveState -p FragmentPath -p User -p Group -p WorkingDirectory -p ExecStart --no-pager 2>/dev/null || true
+  printf '%s\n' "--- unit file ---"
+  systemctl cat "$node_unit" --no-pager 2>/dev/null | redact_stream || true
+else
+  printf 'No node_exporter systemd unit found under known names.\n'
+fi
+
 info "LISTENING OBSERVABILITY PORTS"
-ss -lntp 2>/dev/null | grep -E ':(4317|4318|4900|5601|9090|9093|9100|9115|9200|9256|9300|9600|21890|21891)\b' || true
+ss -lntp 2>/dev/null | grep -E ':(2021|4317|4318|4900|5601|9090|9093|9100|9115|9200|9256|9300|9600|21890|21891)\b' || true
 
 info "OPENSearch CONFIGURATION"
 show_file /opt/opensearch/config/opensearch.yml
@@ -161,11 +187,14 @@ info "PROMETHEUS CONFIGURATION"
 show_file /etc/prometheus/prometheus.yml
 printf '\n--- Prometheus rule inventory ---\n'
 find /etc/prometheus/rules -maxdepth 2 -type f -printf '%m %u:%g %p\n' 2>/dev/null | sort || true
+show_glob '/etc/prometheus/rules/*.yml'
+show_glob '/etc/prometheus/rules/*.yaml'
 
 info "ALERTMANAGER CONFIGURATION"
 show_file /etc/alertmanager/alertmanager.yml
 printf '\n--- Alertmanager template inventory ---\n'
 find /etc/alertmanager/templates -maxdepth 2 -type f -printf '%m %u:%g %p\n' 2>/dev/null | sort || true
+show_glob '/etc/alertmanager/templates/*.tmpl'
 
 info "PROCESS EXPORTER CONFIGURATION"
 show_file /etc/process-exporter/process-exporter.yml
