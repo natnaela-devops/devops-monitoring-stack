@@ -1,6 +1,6 @@
 # Dedicated observability host templates
 
-These files are sanitized deployment templates for the machine that runs OpenSearch, OpenSearch Dashboards, Data Prepper, and Prometheus outside the RKE2 application cluster.
+These files are sanitized deployment templates for the machine that runs OpenSearch, OpenSearch Dashboards, Data Prepper, Prometheus, Alertmanager, and host-level process monitoring outside the RKE2 application cluster.
 
 They intentionally contain no addresses, credentials, certificates, or environment-specific names. Render every `{{ ... }}` value from a private environment overlay or approved secrets manager before installation.
 
@@ -13,5 +13,9 @@ They intentionally contain no addresses, credentials, certificates, or environme
 | `data-prepper/pipelines.example.yaml` | `/etc/data-prepper/pipelines/pipelines.yaml` | Logs, traces, and v2 service-map pipelines |
 | `systemd/data-prepper.service` | `/etc/systemd/system/data-prepper.service` | Pinned Data Prepper process definition |
 | `systemd/prometheus.service` | `/etc/systemd/system/prometheus.service` | Pinned Prometheus process definition |
+| `systemd/alertmanager.service` | `/etc/systemd/system/alertmanager.service` | Pinned Alertmanager process definition |
+| `systemd/process-exporter.service` | `/etc/systemd/system/process-exporter.service` | Pinned process-exporter definition |
 
 Do not copy a template into service without first following [Dedicated Observability Host Bootstrap](../docs/06-observability-host-bootstrap.md).
+
+The exact currently operated reference versions are documented in [Reference UAT Observability Baseline](../docs/08-reference-uat-baseline.md).

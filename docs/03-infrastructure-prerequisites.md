@@ -9,7 +9,7 @@ This checklist applies to:
 
 - the RKE2 server and worker nodes;
 - the OpenTelemetry Operator and Collector;
-- the dedicated observability platform running OpenSearch, OpenSearch Dashboards, Data Prepper, and Prometheus;
+- the dedicated observability platform running OpenSearch, OpenSearch Dashboards, Data Prepper, Prometheus, and Alertmanager;
 - lab, UAT, and production environments.
 
 The preflight is read-only unless a command is explicitly identified as a remediation command in a later installation document.
@@ -274,7 +274,7 @@ sysctl vm.max_map_count
 swapon --show
 
 echo '=== Service state ==='
-systemctl is-active   opensearch   opensearch-dashboards   data-prepper   prometheus
+systemctl is-active   opensearch   opensearch-dashboards   data-prepper   prometheus   alertmanager   process-exporter
 
 echo '=== Failed services ==='
 systemctl --failed
@@ -284,7 +284,7 @@ ss -lntp |
 grep -E ':(5601|9090|9200|9300|9600|21890|21891)\b' || true
 
 echo '=== Prometheus configuration ==='
-/opt/prometheus-3.10.0/promtool   check config /etc/prometheus/prometheus.yml
+/opt/prometheus/promtool   check config /etc/prometheus/prometheus.yml
 
 echo '=== Data Prepper recent errors ==='
 journalctl -u data-prepper   --since '30 minutes ago'   --no-pager |

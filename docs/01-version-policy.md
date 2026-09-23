@@ -1,6 +1,6 @@
 # Version and Lifecycle Policy
 
-**Baseline date:** 2026-08-14  
+**Baseline date:** 2026-09-23  
 **Scope:** RKE2 application cluster and the dedicated OpenSearch observability platform.
 
 ## Objective
@@ -10,7 +10,7 @@ This repository pins exact, validated component versions so that the lab, UAT, a
 ## Selection policy
 
 1. Only stable releases are eligible; release candidates, beta, and nightly builds are excluded.
-2. The default target is the latest stable minor release minus two minor releases (**N-2**).
+2. The default long-term selection target is the latest stable minor release minus two minor releases (**N-2**), but the current v1 qualification deliberately reproduces the operated UAT reference stack exactly before any upgrade is attempted.
 3. Exact patch versions and container tags are pinned. Floating tags such as `latest` are prohibited.
 4. An actively supported LTS release takes precedence over N-2.
 5. Compatibility, security, or missing-distribution constraints may override N-2.
@@ -21,30 +21,35 @@ This repository pins exact, validated component versions so that the lab, UAT, a
 
 ## Validated and production baseline
 
-| Component | Validated lab version | Production target | Selection rationale |
-|---|---:|---:|---|
-| Ubuntu Server | 22.04 LTS | 22.04 LTS | Long-term support operating-system baseline |
-| RKE2 / Kubernetes | v1.35.7+rke2r1 | v1.35 supported patch | N-2 Kubernetes minor strategy; patch must be validated before rollout |
-| OpenSearch | 3.7.0 | 3.7.x | Validated compatibility baseline; one stable release behind 3.8 |
-| OpenSearch Dashboards | 3.7.0 | Same as OpenSearch | Required product-version alignment |
-| Data Prepper | 2.14.1 | 2.14.1 | N-2 line and validated pipeline behavior |
-| Prometheus | 3.10.0 | 3.13.2 LTS | Production uses the supported LTS line rather than an expired short-lived minor |
-| OpenTelemetry Collector Contrib | 0.156.0 | 0.156.0 | Exact N-2 selection from 0.158.0 |
-| OpenTelemetry Operator | 0.154.0 | 0.154.0 | Numeric N-2 is 0.155.0, but no corresponding official Helm chart is available; nearest older charted version selected |
-| OpenTelemetry Operator Helm chart | 0.119.0 | 0.119.0 | Official chart mapping for Operator 0.154.0 |
-| OpenTelemetry Java agent | 2.28.1 | 2.28.1 | N-2 line and already validated with the Spring Boot services |
-| Java runtime | 17.0.19 | Java 17 LTS | Application and agent compatibility |
-| Helm client | 3.20.0 | 3.20.x | Deployment client pinned for reproducible Helm rendering |
+The dedicated observability-host entries below were verified directly from the current UAT reference environment on 2026-09-23. Kubernetes-side entries remain separately pinned and must be revalidated before they are changed.
+
+| Component | Current pinned version | Scope / rationale |
+|---|---:|---|
+| Ubuntu Server | 22.04 LTS | Existing operating-system baseline |
+| RKE2 / Kubernetes | v1.35.7+rke2r1 / v1.35.7 | Existing cluster-side repository baseline; not changed by the dedicated-host parity test |
+| OpenSearch | 3.6.0 | Exact UAT reference version for v1 parity qualification |
+| OpenSearch Dashboards | 3.6.0 | Must exactly match OpenSearch |
+| Data Prepper | 2.16.0 | Exact UAT reference version |
+| Prometheus | 3.14.0 | Exact UAT reference version |
+| Alertmanager | 0.31.1 | Exact UAT reference version |
+| node_exporter | 1.12.1 | Exact verified exporter version; deployed on monitored Linux hosts as required |
+| process-exporter | 0.8.7 | Exact UAT observability-host version |
+| OpenTelemetry Collector Contrib | 0.156.0 | Existing cluster-side pin; revalidate separately against the reference cluster |
+| OpenTelemetry Operator | 0.154.0 | Existing cluster-side pin; revalidate separately against the reference cluster |
+| OpenTelemetry Operator Helm chart | 0.119.0 | Existing chart pin |
+| OpenTelemetry Java agent | 2.30.0 | Current application instrumentation baseline used by the reference implementation |
+| Java runtime | 17.0.19 | Existing repository baseline; application runtime remains independently managed |
+| Helm client | 3.20.0 | Existing repository baseline |
 
 ## Documented exceptions
 
-### OpenSearch 3.7
+### Reference-UAT parity for v1
 
-OpenSearch 3.8 was released on 2026-08-04. Strict N-2 would now point to 3.6, but the complete observability pipeline has already been validated on 3.7. Downgrading a working datastore merely to satisfy a numeric rule would introduce migration risk without improving supportability. Version 3.7 is therefore retained as an explicit, reviewed stability exception.
+The v1 qualification intentionally pins the exact versions already operating in the current UAT reference environment rather than introducing version changes while deployment automation, backup/restore, idempotency, RBAC, dashboards, and alerting are still being qualified. Version modernization will be handled as a separate, later change with the full validation lifecycle.
 
-### Prometheus 3.13 LTS
+### Dedicated-host OpenTelemetry Collector
 
-Prometheus minor releases normally have short maintenance periods. Prometheus 3.13 is an LTS line supported through July 2027. Production therefore targets 3.13.2 LTS instead of retaining the lab's 3.10.0 release. The upgrade remains pending lab and UAT validation.
+No standalone OpenTelemetry Collector service is installed on the reference observability host. Collector/Operator components are cluster-side concerns and remain independently versioned.
 
 ### OpenTelemetry Operator 0.154
 

@@ -1,6 +1,6 @@
 # Kubernetes Telemetry Onboarding
 
-**Validation date:** 2026-08-17
+**Validation date:** 2026-09-23
 **Environment:** Functional RKE2 lab
 **Decision:** PASS for reusable application onboarding
 
@@ -17,10 +17,10 @@ The manifests are sanitized examples. Replace the endpoint examples, environment
 | OpenTelemetry Collector Contrib | 0.156.0 |
 | OpenTelemetry Operator | 0.154.0 |
 | OpenTelemetry Operator Helm chart | 0.119.0 |
-| OpenTelemetry Java agent | 2.28.1 |
+| OpenTelemetry Java agent | 2.30.0 |
 | Fluent Bit | 4.1.0 |
-| Data Prepper | 2.14.1 |
-| OpenSearch and Dashboards | 3.7.0 |
+| Data Prepper | 2.16.0 |
+| OpenSearch and Dashboards | 3.6.0 |
 
 ## Cluster-level flow
 

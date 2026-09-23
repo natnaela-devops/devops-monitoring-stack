@@ -2,7 +2,7 @@
 # capacity-tested observability infrastructure.
 services:
   opensearch:
-    image: opensearchproject/opensearch:3.7.0
+    image: opensearchproject/opensearch:3.6.0
     container_name: opensearch-lab
     environment:
       discovery.type: single-node
@@ -24,7 +24,7 @@ services:
     restart: unless-stopped
 
   opensearch-dashboards:
-    image: opensearchproject/opensearch-dashboards:3.7.0
+    image: opensearchproject/opensearch-dashboards:3.6.0
     container_name: opensearch-dashboards-lab
     environment:
       OPENSEARCH_HOSTS: '["https://opensearch:9200"]'

@@ -8,14 +8,19 @@ This implementation replaces the repository's former SigNoz/Grafana experiment. 
 
 | Layer | Component | Validated version | Responsibility |
 |---|---|---:|---|
-| Application | OpenTelemetry Java agent | 2.28.1 | Automatic traces, correlated logs, and runtime/application metrics |
+| Application | OpenTelemetry Java agent | 2.30.0 | Automatic traces, correlated logs, and runtime/application metrics |
 | Kubernetes | OpenTelemetry Operator | 0.154.0 | Opt-in agent injection for agentless images |
 | Kubernetes | OpenTelemetry Collector Contrib | 0.156.0 | OTLP gateway, Kubernetes enrichment, and signal routing |
 | Kubernetes | Fluent Bit | 4.1.0 | Container stdout collection for workloads not exporting OTLP logs |
-| Processing | Data Prepper | 2.14.1 | Trace/log ingestion and v2 service-map generation |
-| Metrics | Prometheus | 3.10.0 lab; 3.13.2 LTS production target | Metrics storage, RED rules, SLO calculations, and reporting metrics |
-| Storage and UI | OpenSearch and OpenSearch Dashboards | 3.7.0 | Logs, traces, application maps, dashboards, and investigation |
+| Processing | Data Prepper | 2.16.0 | Trace/log ingestion and v2 service-map generation |
+| Metrics | Prometheus | 3.14.0 | Metrics storage, RED rules, SLO calculations, and reporting metrics |
+| Alerting | Alertmanager | 0.31.1 | Alert routing and notification delivery |
+| Host metrics | node_exporter | 1.12.1 | Linux host CPU, memory, disk, filesystem, network, load, and uptime metrics |
+| Host processes | process-exporter | 0.8.7 | Selected process-level metrics on the observability host |
+| Storage and UI | OpenSearch and OpenSearch Dashboards | 3.6.0 | Logs, traces, application maps, dashboards, and investigation |
 | Platform | RKE2 / Kubernetes | v1.35.7+rke2r1 / v1.35.7 | Application orchestration |
+
+The dedicated observability-host versions above were synchronized on 2026-09-23 to the currently operated UAT reference environment. Kubernetes-side Collector/Operator versions remain independently pinned until they are revalidated against that reference.
 
 See [Version and Lifecycle Policy](docs/01-version-policy.md) for the selection rules and production promotion process.
 
@@ -79,7 +84,8 @@ See [Kubernetes Telemetry Onboarding](docs/05-kubernetes-telemetry-onboarding.md
 │   ├── 04-lab-preflight-validation.md
 │   ├── 05-kubernetes-telemetry-onboarding.md
 │   ├── 06-observability-host-bootstrap.md
-│   └── 07-validation-and-evidence.md
+│   ├── 07-validation-and-evidence.md
+│   └── 08-reference-uat-baseline.md
 ├── evidence/                           # Evidence policy; generated output stays local
 ├── kubernetes/
 │   ├── collector/                       # Collector, Service, RBAC, and configuration
@@ -121,6 +127,7 @@ Read the repository in this order:
 5. [Kubernetes Telemetry Onboarding](docs/05-kubernetes-telemetry-onboarding.md)
 6. [Dedicated Observability Host Bootstrap](docs/06-observability-host-bootstrap.md)
 7. [Validation and Evidence](docs/07-validation-and-evidence.md)
+8. [Reference UAT Observability Baseline](docs/08-reference-uat-baseline.md)
 
 ## Lab-only OpenSearch start
 
@@ -143,7 +150,7 @@ Before production promotion, the project still requires:
 - Kubernetes NetworkPolicies and host firewall rules;
 - external secret management and credential rotation;
 - OpenSearch multi-node sizing, retention, snapshots, and recovery testing;
-- Prometheus LTS upgrade validation, retention, backup, and HA decision;
+- Prometheus retention, backup, and HA decision;
 - alert routing, notification ownership, and runbooks;
 - UAT soak, failure, and rollback tests at representative application scale.
 

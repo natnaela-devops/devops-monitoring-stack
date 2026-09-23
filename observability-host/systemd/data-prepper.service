@@ -9,9 +9,9 @@ Requires=opensearch.service
 Type=simple
 User=data-prepper
 Group=data-prepper
-WorkingDirectory=/opt/data-prepper-2.14.1
+WorkingDirectory=/opt/data-prepper
 Environment="JAVA_OPTS=-Xms512m -Xmx1g"
-ExecStart=/opt/data-prepper-2.14.1/bin/data-prepper /etc/data-prepper/pipelines/pipelines.yaml /etc/data-prepper/data-prepper-config.yaml
+ExecStart=/opt/data-prepper/bin/data-prepper
 Restart=on-failure
 RestartSec=5
 SuccessExitStatus=143
