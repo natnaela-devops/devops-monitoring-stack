@@ -1,0 +1,50 @@
+name: Repository validation
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Bash syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r script; do
+            echo "Checking $script"
+            bash -n "$script"
+          done < <(find scripts -maxdepth 1 -type f -name '*.sh' | sort)
+
+      - name: Version invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          source versions.env
+          test "$OPENSEARCH_VERSION" = "$OPENSEARCH_DASHBOARDS_VERSION"
+          test -n "$PROMETHEUS_VERSION"
+          test -n "$ALERTMANAGER_VERSION"
+          test -n "$NODE_EXPORTER_VERSION"
+          test -n "$PROCESS_EXPORTER_VERSION"
+
+      - name: Public-repository secret guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          pattern='(BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|10\.1\.22\.|Wbvl8L|5293821307|enatbank|act\.com\.et)'
+          found=0
+          while IFS= read -r -d '' file; do
+            # This workflow necessarily contains the deny-list pattern itself.
+            [[ "$file" == ".github/workflows/validate.yml" ]] && continue
+            if grep -nEI "$pattern" "$file"; then
+              echo "Potential environment-specific or secret material detected in: $file"
+              found=1
+            fi
+          done < <(git ls-files -z)
+          test "$found" -eq 0

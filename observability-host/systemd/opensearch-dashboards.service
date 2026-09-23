@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenSearch Dashboards
+Documentation=https://opensearch.org/docs/latest/dashboards/
+Wants=network-online.target
+After=network-online.target opensearch.service
+Requires=opensearch.service
+
+[Service]
+Type=simple
+User=opensearch-dashboards
+Group=opensearch-dashboards
+WorkingDirectory=/opt/opensearch-dashboards
+ExecStart=/opt/opensearch-dashboards/bin/opensearch-dashboards
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=90
+LimitNOFILE=65536
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target
