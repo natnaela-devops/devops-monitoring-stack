@@ -31,6 +31,7 @@ It does NOT remove:
   - host networking
   - Docker itself
   - unrelated user files
+  - unrelated packages through apt autoremove
   - node_exporter on any other machine
 
 Run explicitly with:
@@ -78,7 +79,6 @@ done
 
 if (( ${#packages[@]} > 0 )); then
   apt-get purge -y "${packages[@]}"
-  apt-get autoremove -y
 fi
 
 info "Removing OpenSearch repository metadata"
