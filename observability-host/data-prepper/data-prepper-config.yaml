@@ -1,10 +1,6 @@
 ssl: false
-serverPort: 4900
 
-# Bind the unauthenticated core API to loopback at the host firewall/reverse
-# proxy layer. Production should use an authenticated and TLS-protected API.
-authentication:
-  unauthenticated:
-
-processorShutdownTimeout: 30s
-sinkShutdownTimeout: 30s
+experimental:
+  enabled_plugins:
+    sink:
+      - prometheus
