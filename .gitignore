@@ -19,3 +19,8 @@ snapshots/
 
 # Generated validation evidence may contain environment metadata.
 evidence/generated/
+
+# Private rendered configuration
+rendered/
+*-targets.json
+!config/prometheus-targets.example.json

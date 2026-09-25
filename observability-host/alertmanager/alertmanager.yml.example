@@ -1,0 +1,24 @@
+global:
+  resolve_timeout: 5m
+
+templates:
+  - /etc/alertmanager/templates/*.tmpl
+
+route:
+  receiver: telegram-infrastructure
+  group_by:
+    - alertname
+    - severity
+    - environment
+  group_wait: 10s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: telegram-infrastructure
+    telegram_configs:
+      - bot_token_file: "{{ ALERTMANAGER_TELEGRAM_TOKEN_FILE }}"
+        chat_id: {{ ALERTMANAGER_TELEGRAM_CHAT_ID }}
+        send_resolved: true
+        parse_mode: ''
+        message: '{{ template "telegram.observability.message" . }}'

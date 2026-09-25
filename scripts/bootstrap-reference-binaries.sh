@@ -110,9 +110,9 @@ PLAN
 info "Installing explicit prerequisite packages"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y --no-install-recommends ca-certificates curl tar gzip jq gnupg openjdk-17-jre-headless
+apt-get install -y --no-install-recommends ca-certificates curl tar gzip jq gnupg python3 openjdk-17-jre-headless
 
-for cmd in curl tar sha256sum gpg awk grep find systemctl; do
+for cmd in curl tar sha256sum gpg awk grep find systemctl python3; do
   command -v "$cmd" >/dev/null 2>&1 || die "required command missing after prerequisite installation: $cmd"
 done
 

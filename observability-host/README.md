@@ -11,13 +11,17 @@ They intentionally contain no addresses, credentials, certificates, or environme
 | `opensearch/heap.options.example` | `jvm.options.d/heap.options` | Explicit equal minimum and maximum heap |
 | `dashboards/opensearch_dashboards.yml.example` | Dashboards configuration directory | HTTPS UI and OpenSearch connection baseline |
 | `data-prepper/data-prepper-config.yaml` | `/etc/data-prepper/data-prepper-config.yaml` | Data Prepper core API and circuit breaker |
-| `data-prepper/pipelines.example.yaml` | `/etc/data-prepper/pipelines/pipelines.yaml` | Logs, traces, and v2 service-map pipelines |
+| `data-prepper/pipelines.example.yaml` | `/opt/data-prepper/pipelines/pipelines.yaml` | Reference traces, HTTP logs, service-map, and Prometheus metric pipeline |
 | `systemd/opensearch.service` | `/etc/systemd/system/opensearch.service` | Canonical `/opt/opensearch` service definition |
 | `systemd/opensearch-dashboards.service` | `/etc/systemd/system/opensearch-dashboards.service` | Canonical `/opt/opensearch-dashboards` service definition |
 | `systemd/data-prepper.service` | `/etc/systemd/system/data-prepper.service` | Pinned Data Prepper process definition |
 | `systemd/prometheus.service` | `/etc/systemd/system/prometheus.service` | Pinned Prometheus process definition |
 | `systemd/alertmanager.service` | `/etc/systemd/system/alertmanager.service` | Pinned Alertmanager process definition |
 | `systemd/node_exporter.service` | `/etc/systemd/system/node_exporter.service` | Reference node_exporter definition on port 9115 |
+| `alertmanager/alertmanager.yml.example` | `/etc/alertmanager/alertmanager.yml` | Reference alert routing without secrets |
+| `alertmanager/telegram.tmpl` | `/etc/alertmanager/templates/observability-telegram.tmpl` | Generic Telegram alert format |
+| `prometheus/prometheus.yml.example` | `/etc/prometheus/prometheus.yml` | Parameterized 30-second scrape/evaluation baseline |
+| `process-exporter/process-exporter.yml` | `/etc/process-exporter/process-exporter.yml` | Reference process grouping |
 | `systemd/process-exporter.service` | `/etc/systemd/system/process-exporter.service` | Pinned process-exporter definition |
 | `systemd/prometheus.service.d/apm-remote-write.conf` | `/etc/systemd/system/prometheus.service.d/apm-remote-write.conf` | Effective 5d/3GB Prometheus retention and remote-write receiver |
 | `systemd/data-prepper.service.d/snappy-glibc.conf.example` | Optional Data Prepper drop-in | Reference native Snappy override; enable only after the native library is installed and validated |
@@ -45,3 +49,18 @@ Prepper, `prometheus:prometheus` for Prometheus, `alertmanager:alertmanager`
 for Alertmanager, `node_exporter:node_exporter` for node_exporter, and root for
 process-exporter. The binary bootstrap enforces these identities and leaves all
 services stopped until configuration validation is complete.
+
+
+## Configuration render gate
+
+Use the repository templates only through the non-mutating renderer:
+
+```bash
+bash scripts/render-reference-config.sh --plan
+bash scripts/render-reference-config.sh --render /path/to/private.env /path/to/private-targets.json /root/observability-rendered
+```
+
+Start from `config/reference.env.example` and
+`config/prometheus-targets.example.json`. Keep the customized copies outside
+Git. The renderer reads service-account passwords from files, renders a private
+staging tree, and runs semantic validation without installing or activating it.

@@ -33,6 +33,21 @@ jobs:
           test -n "$NODE_EXPORTER_VERSION"
           test -n "$PROCESS_EXPORTER_VERSION"
 
+      - name: Reference render smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp config/reference.env.example /tmp/reference.env
+          printf '%s\n' 'ci-dashboards-password' > /tmp/dashboards-password
+          printf '%s\n' 'ci-ingest-password' > /tmp/ingest-password
+          sed -i 's#^DASHBOARDS_SERVICE_PASSWORD_FILE=.*#DASHBOARDS_SERVICE_PASSWORD_FILE=/tmp/dashboards-password#' /tmp/reference.env
+          sed -i 's#^OPENSEARCH_INGEST_PASSWORD_FILE=.*#OPENSEARCH_INGEST_PASSWORD_FILE=/tmp/ingest-password#' /tmp/reference.env
+          bash scripts/render-reference-config.sh --plan /tmp/reference.env config/prometheus-targets.example.json
+          bash scripts/render-reference-config.sh --render /tmp/reference.env config/prometheus-targets.example.json /tmp/reference-rendered
+          test -s /tmp/reference-rendered/opensearch/opensearch.yml
+          test -s /tmp/reference-rendered/data-prepper/pipelines/pipelines.yaml
+          test -s /tmp/reference-rendered/prometheus/prometheus.yml
+
       - name: Public-repository secret guard
         shell: bash
         run: |
