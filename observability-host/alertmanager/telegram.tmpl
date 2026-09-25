@@ -1,0 +1,27 @@
+{{ define "telegram.observability.message" -}}
+{{ if eq .Status "firing" }}🚨 {{ .CommonLabels.alertname }}{{ else }}✅ RESOLVED — {{ .CommonLabels.alertname }}{{ end }}
+{{- if .CommonLabels.severity }}
+{{ .CommonLabels.severity | toUpper }}{{ if .CommonLabels.environment }} | {{ .CommonLabels.environment }}{{ end }}
+{{- end }}
+
+{{ range .Alerts -}}
+{{ if eq $.Status "firing" }}{{ if .Annotations.summary }}{{ .Annotations.summary }}
+{{ end }}{{ end -}}
+{{ if .Labels.service }}Service: {{ .Labels.service }}
+{{ end -}}
+{{ if .Labels.node }}Node: {{ .Labels.node }}
+{{ end -}}
+{{ if .Labels.ip }}IP: {{ .Labels.ip }}
+{{ end -}}
+{{ if .Labels.namespace }}Namespace: {{ .Labels.namespace }}
+{{ end -}}
+{{ if .Labels.pod }}Pod: {{ .Labels.pod }}
+{{ end -}}
+{{ if .Labels.container }}Container: {{ .Labels.container }}
+{{ end -}}
+{{ if .Labels.mountpoint }}Mount: {{ .Labels.mountpoint }}
+{{ end -}}
+{{ if eq $.Status "resolved" }}Condition cleared.
+{{ end }}
+{{ end -}}
+{{ end }}
