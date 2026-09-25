@@ -1,0 +1,30 @@
+process_names:
+  - name: "OpenSearch"
+    comm:
+      - java
+    cmdline:
+      - 'org\.opensearch\.bootstrap\.OpenSearch'
+
+  - name: "Data Prepper"
+    comm:
+      - java
+    cmdline:
+      - 'org\.opensearch\.dataprepper\.DataPrepperExecute'
+
+  - name: "OpenSearch Dashboards"
+    comm:
+      - node
+    cmdline:
+      - '/opt/opensearch-dashboards/'
+
+  - name: "Prometheus"
+    comm:
+      - prometheus
+    cmdline:
+      - '/opt/prometheus/prometheus'
+
+  - name: "Grafana"
+    comm:
+      - grafana
+    cmdline:
+      - '/usr/share/grafana/bin/grafana'
