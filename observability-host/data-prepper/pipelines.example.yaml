@@ -1,79 +1,200 @@
-trace-entry-pipeline:
-  workers: 2
+entry-pipeline:
+  delay: "100"
   source:
     otel_trace_source:
+      ssl: false
       port: 21890
-      ssl: true
-      sslKeyCertChainFile: "{{ DATA_PREPPER_TLS_CERTIFICATE }}"
-      sslKeyFile: "{{ DATA_PREPPER_TLS_PRIVATE_KEY }}"
-      health_check_service: true
   buffer:
     bounded_blocking:
-      buffer_size: 4096
-      batch_size: 64
+      buffer_size: 10240
+      batch_size: 160
   sink:
     - pipeline:
-        name: trace-raw-pipeline
+        name: "raw-pipeline"
     - pipeline:
-        name: trace-service-map-pipeline
+        name: "service-map-pipeline"
 
-trace-raw-pipeline:
-  workers: 2
+raw-pipeline:
   source:
     pipeline:
-      name: trace-entry-pipeline
+      name: "entry-pipeline"
+  buffer:
+    bounded_blocking:
+      buffer_size: 10240
+      batch_size: 160
   processor:
     - otel_traces:
+    - add_entries:
+        entries:
+          - key: "derived.environment"
+            value: "{{ ENVIRONMENT }}"
+            overwrite_if_key_exists: true
   sink:
     - opensearch:
         hosts: ["{{ OPENSEARCH_HTTPS_ENDPOINT }}"]
+        insecure: false
         username: "{{ OPENSEARCH_INGEST_USERNAME }}"
         password: "{{ OPENSEARCH_INGEST_PASSWORD }}"
-        cert: "{{ OPENSEARCH_CA_CERTIFICATE }}"
+        cert: "{{ DATA_PREPPER_CA_CERTIFICATE }}"
         index_type: trace-analytics-raw
 
-trace-service-map-pipeline:
-  workers: 1
+service-map-pipeline:
+  delay: "100"
   source:
     pipeline:
-      name: trace-entry-pipeline
+      name: "entry-pipeline"
   buffer:
     bounded_blocking:
-      buffer_size: 2048
-      batch_size: 32
+      buffer_size: 10240
+      batch_size: 160
   processor:
+    - add_entries:
+        entries:
+          - key: "/resource/attributes/deployment.environment.name"
+            value_expression: "/attributes/resource.attributes.deployment@environment@name"
+            add_when: "/attributes/resource.attributes.deployment@environment@name != null"
     - otel_apm_service_map:
         window_duration: 60s
-        db_path: /var/lib/data-prepper/otel-apm-service-map
+        db_path: "/opt/data-prepper/data/otel-apm-service-map/"
   route:
     - otel_apm_service_map_route: 'getEventType() == "SERVICE_MAP"'
+    - service_processed_metrics: 'getEventType() == "METRIC"'
   sink:
     - opensearch:
         hosts: ["{{ OPENSEARCH_HTTPS_ENDPOINT }}"]
+        insecure: false
         username: "{{ OPENSEARCH_INGEST_USERNAME }}"
         password: "{{ OPENSEARCH_INGEST_PASSWORD }}"
-        cert: "{{ OPENSEARCH_CA_CERTIFICATE }}"
+        cert: "{{ DATA_PREPPER_CA_CERTIFICATE }}"
         index_type: otel-v2-apm-service-map
-        routes: [otel_apm_service_map_route]
+        routes:
+          - otel_apm_service_map_route
+    - prometheus:
+        url: "http://localhost:9090/api/v1/write"
+        insecure: true
+        routes:
+          - service_processed_metrics
 
 log-pipeline:
   workers: 2
+  delay: "100"
   source:
-    otel_logs_source:
-      port: 21891
-      ssl: true
-      sslKeyCertChainFile: "{{ DATA_PREPPER_TLS_CERTIFICATE }}"
-      sslKeyFile: "{{ DATA_PREPPER_TLS_PRIVATE_KEY }}"
-      health_check_service: true
+    http:
+      port: 2021
+      ssl: false
   buffer:
     bounded_blocking:
-      buffer_size: 4096
-      batch_size: 64
+      buffer_size: 10240
+      batch_size: 160
+  processor:
+    - add_entries:
+        entries:
+          - key: "serviceName"
+            value_expression: '"/kubernetes/labels/observability-service"'
+            add_when: '"/kubernetes/labels/observability-service" != null'
+          - key: "serviceName"
+            value_expression: "/kubernetes/labels/app"
+            add_when: '"/kubernetes/labels/observability-service" == null and /kubernetes/labels/app != null'
+          - key: "serviceName"
+            value_expression: "/kubernetes/container_name"
+            add_when: '"/kubernetes/labels/observability-service" == null and /kubernetes/labels/app == null and /kubernetes/container_name != null'
+    - grok:
+        pattern_definitions:
+          TRACE_ID: '[0-9a-fA-F]{32}'
+          SPAN_ID: '[0-9a-fA-F]{16}'
+          KLOG_LEVEL: '[IWEF]'
+        match:
+          log:
+            - '(?s)^%{TIMESTAMP_ISO8601:appTimestamp}\s+\[%{DATA:thread}\]\s+%{LOGLEVEL:level}\s+\[trace=%{TRACE_ID:traceId}\s+span=%{SPAN_ID:spanId}\]\s+%{NOTSPACE:logger}\s+-\s+%{GREEDYDATA:message}$'
+            - '(?s)^%{TIMESTAMP_ISO8601:appTimestamp}\s+%{LOGLEVEL:level}\s+%{NUMBER:pid}\s+---\s+\[%{DATA:thread}\]\s+%{NOTSPACE:logger}\s+:\s+%{GREEDYDATA:message}$'
+            - '^%{TIMESTAMP_ISO8601:appTimestamp} level=%{LOGLEVEL:level}\s+service=.*? traceId=%{TRACE_ID:traceId} spanId=%{SPAN_ID:spanId} .*? msg=%{GREEDYDATA:message}$'
+            - '^%{TIMESTAMP_ISO8601:appTimestamp} level=%{LOGLEVEL:level}\s+service=.*? traceId= spanId= .*? msg=%{GREEDYDATA:message}$'
+            - '^%{KLOG_LEVEL:klogLevel}[0-9]{4}\s+%{TIME}\s+%{NUMBER:klogPid}\s+%{NOTSPACE:logger}\]\s+%{GREEDYDATA:message}$'
+            - '^\[%{YEAR}/%{MONTHNUM}/%{MONTHDAY}\s+%{TIME}\]\s+\[\s*%{WORD:fluentLevel}\]\s+\[%{DATA:logger}\]\s+%{GREEDYDATA:message}$'
+            - '^time="%{TIMESTAMP_ISO8601:appTimestamp}"\s+level=%{WORD:logfmtLevel}\s+msg="%{DATA:message}"(?:\s+func=%{NOTSPACE:function})?(?:\s+file="%{DATA:sourceFile}")?.*$'
+            - '^%{TIMESTAMP_ISO8601:appTimestamp}\s+%{LOGLEVEL:level}\s+\[traceId=%{TRACE_ID:traceId},spanId=%{SPAN_ID:spanId}\].*?\s:\s%{GREEDYDATA:message}$'
+            - '^%{TIMESTAMP_ISO8601:appTimestamp}\s+%{LOGLEVEL:level}\s+\[traceId=,spanId=\].*?\s:\s%{GREEDYDATA:message}$'
+            - '^%{TIMESTAMP_ISO8601:appTimestamp}\s+%{LOGLEVEL:level}\s+.*?\s:\s%{GREEDYDATA:message}$'
+            - '(?s)^%{TIMESTAMP_ISO8601}\s+\[%{DATA:thread}\]\s+%{LOGLEVEL:level}\s+%{NOTSPACE:logger}\s+-\s+%{GREEDYDATA:message}$'
+            - '(?s)^%{TIMESTAMP_ISO8601}\s+%{LOGLEVEL:level}\s+%{NOTSPACE:logger}\s+\[\]\s+-\s+%{GREEDYDATA:message}$'
+            - '^%{TIMESTAMP_ISO8601}\s+\[%{LOGLEVEL:level}\]\[%{NUMBER:pid}\]\s+%{NOTSPACE:logger}\s+%{NUMBER:sourceLine}:\s+%{GREEDYDATA:message}$'
+            - '^%{TIMESTAMP_ISO8601}\s+\|\s+%{LOGLEVEL:level}\s+\|\s+%{DATA:cbsService}\s+\|\s+%{DATA:logger}\s+\|\s+%{GREEDYDATA:message}$'
+            - '^%{YEAR}/%{MONTHNUM}/%{MONTHDAY}\s+%{TIME}\s+\[%{LOGLEVEL:level}\]\s+%{GREEDYDATA:message}$'
+            - '(?s)^%{TIMESTAMP_ISO8601}\s+%{LOGLEVEL:level}\s+%{GREEDYDATA:message}$'
+            - '.*\[traceId=%{TRACE_ID:traceId},spanId=%{SPAN_ID:spanId}\].*'
+    - add_entries:
+        entries:
+          - key: "level"
+            value: "INFO"
+            add_when: '/level == null and /klogLevel == "I"'
+          - key: "level"
+            value: "WARN"
+            add_when: '/level == null and /klogLevel == "W"'
+          - key: "level"
+            value: "ERROR"
+            add_when: '/level == null and /klogLevel == "E"'
+          - key: "level"
+            value: "FATAL"
+            add_when: '/level == null and /klogLevel == "F"'
+          - key: "level"
+            value: "INFO"
+            add_when: '/level == null and /fluentLevel == "info"'
+          - key: "level"
+            value: "WARN"
+            add_when: '/level == null and (/fluentLevel == "warn" or /fluentLevel == "warning")'
+          - key: "level"
+            value: "ERROR"
+            add_when: '/level == null and /fluentLevel == "error"'
+          - key: "level"
+            value: "DEBUG"
+            add_when: '/level == null and /fluentLevel == "debug"'
+          - key: "level"
+            value: "TRACE"
+            add_when: '/level == null and /fluentLevel == "trace"'
+          - key: "level"
+            value: "INFO"
+            add_when: '/level == null and /logfmtLevel == "info"'
+          - key: "level"
+            value: "WARN"
+            add_when: '/level == null and (/logfmtLevel == "warn" or /logfmtLevel == "warning")'
+          - key: "level"
+            value: "ERROR"
+            add_when: '/level == null and /logfmtLevel == "error"'
+          - key: "level"
+            value: "DEBUG"
+            add_when: '/level == null and /logfmtLevel == "debug"'
+          - key: "level"
+            value: "FATAL"
+            add_when: '/level == null and /logfmtLevel == "fatal"'
+    - delete_entries:
+        with_keys:
+          - "appTimestamp"
+    - grok:
+        match:
+          message:
+            - '^Phone %{NUMBER:correlation.msisdn} → allowed = %{WORD:phoneAllowed}$'
+    - add_entries:
+        entries:
+          - key: "message"
+            value_expression: "/msg"
+            add_when: "/message == null and /msg != null"
+          - key: "message"
+            value_expression: "/body"
+            add_when: "/message == null and /body != null"
+          - key: "message"
+            value_expression: "/log"
+            add_when: "/message == null and /log != null"
+    - substitute_string:
+        entries:
+          - source: "message"
+            from: "\\x1B\\[[0-?]*[ -/]*[@-~]"
+            to: ""
   sink:
     - opensearch:
         hosts: ["{{ OPENSEARCH_HTTPS_ENDPOINT }}"]
+        insecure: false
         username: "{{ OPENSEARCH_INGEST_USERNAME }}"
         password: "{{ OPENSEARCH_INGEST_PASSWORD }}"
-        cert: "{{ OPENSEARCH_CA_CERTIFICATE }}"
-        index_type: custom
-        index: otel-logs-%{yyyy.MM.dd}
+        cert: "{{ DATA_PREPPER_CA_CERTIFICATE }}"
+        index: logs-v2-%{yyyy.MM.dd}
+        flush_timeout: -1
