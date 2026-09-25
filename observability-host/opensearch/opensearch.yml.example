@@ -1,19 +1,24 @@
 cluster.name: "{{ OPENSEARCH_CLUSTER_NAME }}"
 node.name: "{{ OPENSEARCH_NODE_NAME }}"
-
-path.data: /var/lib/opensearch
-path.logs: /var/log/opensearch
-
+path.data: /data/opensearch
+path.logs: /data/logs/opensearch
 network.host: "{{ OPENSEARCH_BIND_ADDRESS }}"
 http.port: 9200
-transport.port: 9300
-
-# Functional single-node mode only. Replace this with an approved multi-node
-# discovery and cluster-manager configuration before production HA deployment.
 discovery.type: single-node
-
-bootstrap.memory_lock: true
 plugins.security.disabled: false
+bootstrap.memory_lock: false
 
-# Production certificates, distinguished names, and role mappings are private
-# environment configuration and must never be committed to this repository.
+plugins.security.ssl.transport.pemcert_filepath: certs/node.pem
+plugins.security.ssl.transport.pemkey_filepath: certs/node-key.pem
+plugins.security.ssl.transport.pemtrustedcas_filepath: certs/root-ca.pem
+
+plugins.security.ssl.http.enabled: true
+plugins.security.ssl.http.pemcert_filepath: certs/node.pem
+plugins.security.ssl.http.pemkey_filepath: certs/node-key.pem
+plugins.security.ssl.http.pemtrustedcas_filepath: certs/root-ca.pem
+
+plugins.security.nodes_dn:
+  - "{{ OPENSEARCH_NODE_DN }}"
+
+plugins.security.authcz.admin_dn:
+  - "{{ OPENSEARCH_ADMIN_DN }}"
