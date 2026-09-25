@@ -1,0 +1,12 @@
+{
+  "node_exporter": [
+    {
+      "target": "127.0.0.1:9115",
+      "node": "observability-node-1",
+      "ip": "127.0.0.1",
+      "role": "observability"
+    }
+  ],
+  "kube_state_metrics": [],
+  "kubelet_cadvisor": []
+}
