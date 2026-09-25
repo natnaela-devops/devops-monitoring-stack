@@ -1,24 +1,24 @@
 [Unit]
-Description=OpenSearch
-Documentation=https://opensearch.org/docs/
-Wants=network-online.target
+Description=OpenSearch 3.6.0
 After=network-online.target
+Wants=network-online.target
+RequiresMountsFor=/data
 
 [Service]
 Type=simple
 User=opensearch
 Group=opensearch
+Environment="OPENSEARCH_HOME=/opt/opensearch"
+Environment="OPENSEARCH_PATH_CONF=/opt/opensearch/config"
+Environment="DISABLE_INSTALL_DEMO_CONFIG=true"
 WorkingDirectory=/opt/opensearch
-Environment=OPENSEARCH_HOME=/opt/opensearch
-Environment=OPENSEARCH_PATH_CONF=/opt/opensearch/config
-Environment=OPENSEARCH_JAVA_HOME=/opt/opensearch/jdk
 ExecStart=/opt/opensearch/bin/opensearch
 Restart=on-failure
-RestartSec=5
-TimeoutStopSec=90
+RestartSec=30
+TimeoutStartSec=300
 LimitNOFILE=65536
 LimitMEMLOCK=infinity
-SuccessExitStatus=143
+LimitNPROC=4096
 
 [Install]
 WantedBy=multi-user.target

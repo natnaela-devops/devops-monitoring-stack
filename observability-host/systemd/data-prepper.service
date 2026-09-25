@@ -1,26 +1,21 @@
 [Unit]
-Description=OpenSearch Data Prepper
-Documentation=https://docs.opensearch.org/latest/data-prepper/
-Wants=network-online.target
+Description=OpenSearch Data Prepper 2.16.0
 After=network-online.target opensearch.service
-Requires=opensearch.service
+Wants=network-online.target
+RequiresMountsFor=/data
 
 [Service]
 Type=simple
-User=data-prepper
-Group=data-prepper
+User=dataprepper
+Group=dataprepper
 WorkingDirectory=/opt/data-prepper
-Environment="JAVA_OPTS=-Xms512m -Xmx1g"
+Environment="JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64"
+Environment="JVM_OPTS=-Xms512m -Xmx1g"
 ExecStart=/opt/data-prepper/bin/data-prepper
 Restart=on-failure
-RestartSec=5
-SuccessExitStatus=143
+RestartSec=30
+TimeoutStartSec=180
 LimitNOFILE=65536
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectHome=true
-ProtectSystem=full
-ReadWritePaths=/var/lib/data-prepper /var/log/data-prepper
 
 [Install]
 WantedBy=multi-user.target

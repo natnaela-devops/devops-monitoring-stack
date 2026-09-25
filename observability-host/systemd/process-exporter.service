@@ -1,20 +1,24 @@
 [Unit]
 Description=Prometheus Process Exporter
-Documentation=https://github.com/ncabatoff/process-exporter
-Wants=network-online.target
 After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
-User=process-exporter
-Group=process-exporter
-ExecStart=/usr/local/bin/process-exporter -config.path /etc/process-exporter/process-exporter.yml -web.listen-address=127.0.0.1:9256 -gather-smaps=false -threads=false -children=true
+User=root
+Group=root
+ExecStart=/usr/local/bin/process-exporter \
+  -config.path /etc/process-exporter/process-exporter.yml \
+  -web.listen-address=127.0.0.1:9256 \
+  -gather-smaps=false \
+  -threads=false \
+  -children=true
 Restart=on-failure
 RestartSec=5
 NoNewPrivileges=true
-PrivateTmp=true
+ProtectSystem=strict
 ProtectHome=true
-ProtectSystem=full
+PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target
