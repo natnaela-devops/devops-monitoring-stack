@@ -1,0 +1,127 @@
+groups:
+  - name: reference-application-errors
+    interval: 1m
+    rules:
+      - alert: Application4xxRateHigh
+        expr: (100 * sum_over_time(((sum by (service) (error{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService=""}) or on(service) (0 * sum by (service) (request{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService=""}))))[10m:1m]) / clamp_min(sum_over_time((sum by (service) (request{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService=""}))[10m:1m]), 1)) > 10 and on(service) sum_over_time((sum by (service) (request{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService=""}))[10m:1m]) >= 20 and on(service) sum_over_time(((sum by (service) (error{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService=""}) or on(service) (0 * sum by (service) (request{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService=""}))))[10m:1m]) >= 5
+        for: 10m
+        labels:
+          severity: warning
+          team: application
+          environment: "{{ ENVIRONMENT }}"
+          category: application
+        annotations:
+          summary: "High 4xx rate on {{ $labels.service }}"
+          description: "{{ $labels.service }} has sustained a 4xx rate above 10% with at least 20 requests and 5 client errors in the rolling 10-minute window."
+          observed: '{{ printf "%.2f" $value }}%'
+          threshold: "> 10% for 10m with >=20 requests and >=5 client errors"
+          impact: "Users or API clients are experiencing an elevated rate of rejected requests."
+          action: "Review authentication, authorization, validation and routing failures, recent application changes, and whether the client-error increase is expected."
+          recovery: "Prometheus no longer reports the 4xx-rate alert condition for this service."
+
+      - alert: Application5xxRateHigh
+        expr: (100 * sum_over_time(((sum by (service) (fault{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService=""}) or on(service) (0 * sum by (service) (request{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService=""}))))[5m:1m]) / clamp_min(sum_over_time((sum by (service) (request{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService=""}))[5m:1m]), 1)) > 5 and on(service) sum_over_time((sum by (service) (request{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService=""}))[5m:1m]) >= 10 and on(service) sum_over_time(((sum by (service) (fault{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService=""}) or on(service) (0 * sum by (service) (request{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService=""}))))[5m:1m]) >= 2
+        for: 5m
+        labels:
+          severity: critical
+          team: application
+          environment: "{{ ENVIRONMENT }}"
+          category: application
+        annotations:
+          summary: "High 5xx rate on {{ $labels.service }}"
+          description: "{{ $labels.service }} has sustained a 5xx rate above 5% with at least 10 requests and 2 server faults in the rolling 5-minute window."
+          observed: '{{ printf "%.2f" $value }}%'
+          threshold: "> 5% for 5m with >=10 requests and >=2 server faults"
+          impact: "Users may experience failed requests caused by server-side application or dependency errors."
+          action: "Check application errors, affected pods, recent deployments, downstream dependencies, database connectivity, and correlated traces or logs."
+          recovery: "Prometheus no longer reports the 5xx-rate alert condition for this service."
+
+      - alert: ApplicationAvailabilityLow
+        expr: (100 * (1 - (sum_over_time(((sum by (service) (fault{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService=""}) or on(service) (0 * sum by (service) (request{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService=""}))))[15m:1m]) / clamp_min(sum_over_time((sum by (service) (request{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService=""}))[15m:1m]), 1)))) < 99 and on(service) sum_over_time((sum by (service) (request{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService=""}))[15m:1m]) >= 20 and on(service) sum_over_time(((sum by (service) (fault{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService=""}) or on(service) (0 * sum by (service) (request{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService=""}))))[15m:1m]) >= 3
+        for: 10m
+        labels:
+          severity: warning
+          team: application
+          environment: "{{ ENVIRONMENT }}"
+          category: application
+        annotations:
+          summary: "Availability below 99% on {{ $labels.service }}"
+          description: "{{ $labels.service }} availability is below 99% over the rolling 15-minute window with sufficient traffic and at least 3 server faults."
+          observed: '{{ printf "%.2f" $value }}%'
+          threshold: "< 99% for 10m with >=20 requests and >=3 server faults"
+          impact: "A measurable portion of requests is failing and users may experience service disruption."
+          action: "Check service health, pods, recent deployments, application errors, dependencies, and correlated traces or logs."
+          recovery: "Prometheus no longer reports application availability below the configured threshold."
+
+  - name: reference-application-latency
+    interval: 1m
+    rules:
+      - alert: ApplicationP99LatencyHigh
+        expr: histogram_quantile(0.99,(label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0"}),"le","0.0","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005"}),"le","0.005","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01"}),"le","0.01","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025"}),"le","0.025","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05"}),"le","0.05","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075"}),"le","0.075","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1"}),"le","0.1","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25"}),"le","0.25","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25|0\\.5"}),"le","0.5","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25|0\\.5|0\\.75"}),"le","0.75","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25|0\\.5|0\\.75|1\\.0"}),"le","1.0","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25|0\\.5|0\\.75|1\\.0|2\\.5"}),"le","2.5","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25|0\\.5|0\\.75|1\\.0|2\\.5|5\\.0"}),"le","5.0","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25|0\\.5|0\\.75|1\\.0|2\\.5|5\\.0|7\\.5"}),"le","7.5","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25|0\\.5|0\\.75|1\\.0|2\\.5|5\\.0|7\\.5|10\\.0"}),"le","10.0","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25|0\\.5|0\\.75|1\\.0|2\\.5|5\\.0|7\\.5|10\\.0|\\+Inf"}),"le","+Inf","",""))) > 3 and on(service) histogram_quantile(0.99,(label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0"}),"le","0.0","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005"}),"le","0.005","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01"}),"le","0.01","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025"}),"le","0.025","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05"}),"le","0.05","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075"}),"le","0.075","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1"}),"le","0.1","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25"}),"le","0.25","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25|0\\.5"}),"le","0.5","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25|0\\.5|0\\.75"}),"le","0.75","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25|0\\.5|0\\.75|1\\.0"}),"le","1.0","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25|0\\.5|0\\.75|1\\.0|2\\.5"}),"le","2.5","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25|0\\.5|0\\.75|1\\.0|2\\.5|5\\.0"}),"le","5.0","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25|0\\.5|0\\.75|1\\.0|2\\.5|5\\.0|7\\.5"}),"le","7.5","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25|0\\.5|0\\.75|1\\.0|2\\.5|5\\.0|7\\.5|10\\.0"}),"le","10.0","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25|0\\.5|0\\.75|1\\.0|2\\.5|5\\.0|7\\.5|10\\.0|\\+Inf"}),"le","+Inf","",""))) <= 5 and on(service) sum_over_time((sum by (service) (request{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService=""}))[5m:1m]) >= 5
+        for: 10m
+        labels:
+          severity: warning
+          team: application
+          environment: "{{ ENVIRONMENT }}"
+          category: application
+        annotations:
+          summary: "High P99 latency on {{ $labels.service }}"
+          description: "{{ $labels.service }} P99 latency has remained above 3 seconds and at or below 5 seconds for 10 minutes while receiving traffic."
+          observed: '{{ printf "%.3f" $value }} s'
+          threshold: "> 3s and <= 5s for 10m with traffic"
+          impact: "Users may experience noticeably slower responses from the affected service."
+          action: "Review slow traces, downstream dependencies, database calls, resource pressure, and recent deployments."
+          recovery: "Prometheus no longer reports P99 latency in the warning range for this service."
+
+      - alert: ApplicationP99LatencyCritical
+        expr: histogram_quantile(0.99,(label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0"}),"le","0.0","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005"}),"le","0.005","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01"}),"le","0.01","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025"}),"le","0.025","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05"}),"le","0.05","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075"}),"le","0.075","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1"}),"le","0.1","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25"}),"le","0.25","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25|0\\.5"}),"le","0.5","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25|0\\.5|0\\.75"}),"le","0.75","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25|0\\.5|0\\.75|1\\.0"}),"le","1.0","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25|0\\.5|0\\.75|1\\.0|2\\.5"}),"le","2.5","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25|0\\.5|0\\.75|1\\.0|2\\.5|5\\.0"}),"le","5.0","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25|0\\.5|0\\.75|1\\.0|2\\.5|5\\.0|7\\.5"}),"le","7.5","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25|0\\.5|0\\.75|1\\.0|2\\.5|5\\.0|7\\.5|10\\.0"}),"le","10.0","","") or label_replace(sum by (service)(latency_seconds_bucket{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService="",le=~"0\\.0|0\\.005|0\\.01|0\\.025|0\\.05|0\\.075|0\\.1|0\\.25|0\\.5|0\\.75|1\\.0|2\\.5|5\\.0|7\\.5|10\\.0|\\+Inf"}),"le","+Inf","",""))) > 5 and on(service) sum_over_time((sum by (service) (request{namespace="span_derived",environment="{{ ENVIRONMENT }}",remoteService=""}))[5m:1m]) >= 5
+        for: 5m
+        labels:
+          severity: critical
+          team: application
+          environment: "{{ ENVIRONMENT }}"
+          category: application
+        annotations:
+          summary: "Critical P99 latency on {{ $labels.service }}"
+          description: "{{ $labels.service }} P99 latency has remained above 5 seconds for 5 minutes while receiving traffic."
+          observed: '{{ printf "%.3f" $value }} s'
+          threshold: "> 5s for 5m with traffic"
+          impact: "Users may experience severe response delays and application timeouts."
+          action: "Immediately review slow traces, service resource pressure, downstream dependencies, database calls, and recent deployments."
+          recovery: "Prometheus no longer reports P99 latency above the critical threshold for this service."
+
+  - name: reference-platform-supplement
+    interval: 1m
+    rules:
+      - alert: KubernetesPodCrashLoopBackOff
+        expr: kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"} == 1
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+          environment: "{{ ENVIRONMENT }}"
+          category: platform
+        annotations:
+          summary: "Pod container is in CrashLoopBackOff"
+          description: "{{ $labels.namespace }}/{{ $labels.pod }} container {{ $labels.container }} has remained in CrashLoopBackOff for 5 minutes."
+          threshold: "CrashLoopBackOff for 5m"
+          impact: "The affected workload may be degraded or unavailable while the container repeatedly fails to start."
+          action: "Check pod events, container logs, exit reason, configuration, secrets, dependencies, resource limits, and the most recent deployment change."
+          recovery: "Prometheus no longer reports this container in CrashLoopBackOff."
+
+      - alert: PrometheusAlertmanagerUnavailable
+        expr: prometheus_notifications_alertmanagers_discovered < 1
+        for: 2m
+        labels:
+          severity: critical
+          team: infrastructure
+          environment: "{{ ENVIRONMENT }}"
+          category: monitoring
+        annotations:
+          summary: "Prometheus has no Alertmanager target"
+          description: "Prometheus has discovered zero Alertmanager instances for at least 2 minutes."
+          observed: '{{ printf "%.0f" $value }} discovered'
+          threshold: "< 1 discovered Alertmanager for 2m"
+          impact: "Prometheus may be unable to deliver alerts to Alertmanager, preventing downstream notifications."
+          action: "Check the Alertmanager service, Prometheus alerting configuration, service discovery, endpoint reachability, and network connectivity."
+          recovery: "Prometheus no longer reports zero discovered Alertmanager targets."
