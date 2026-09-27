@@ -14,6 +14,10 @@ required=(
   data-prepper/config/data-prepper-config.yaml
   data-prepper/pipelines/pipelines.yaml
   prometheus/prometheus.yml
+  prometheus/rules/infrastructure-alerts.yml
+  prometheus/rules/application-alerts.yml
+  prometheus/rules/opensearch-apm-red.yml
+  prometheus/rules/opensearch-apm-report.yml
   alertmanager/alertmanager.yml
   alertmanager/templates/observability-telegram.tmpl
   process-exporter/process-exporter.yml
@@ -60,6 +64,9 @@ ok "Alertmanager reference routing present"
 if [[ -x /opt/prometheus/promtool ]]; then
   /opt/prometheus/promtool check config "$ROOT/prometheus/prometheus.yml" >/dev/null || die "promtool rejected rendered Prometheus config"
   ok "promtool accepted rendered Prometheus config"
+
+  /opt/prometheus/promtool check rules "$ROOT/prometheus/rules/"*.yml >/dev/null || die "promtool rejected rendered Prometheus rules"
+  ok "promtool accepted rendered Prometheus rules"
 fi
 
 if [[ -x /opt/alertmanager/amtool ]]; then
