@@ -17,6 +17,7 @@ APPLICATION_ALIAS="${APPLICATION_ALIAS:-logs-application}"
 PLATFORM_ALIAS="${PLATFORM_ALIAS:-logs-platform}"
 APPLICATION_DATASET_ID="${APPLICATION_DATASET_ID:-std-logs-application-dataset}"
 PLATFORM_DATASET_ID="${PLATFORM_DATASET_ID:-std-logs-platform-dataset}"
+DEFAULT_LOG_DATASET_ID="${DEFAULT_LOG_DATASET_ID:-$APPLICATION_DATASET_ID}"
 ALIAS_TEMPLATE_NAME="${ALIAS_TEMPLATE_NAME:-observability-log-aliases-v1}"
 TIME_FIELD="${TIME_FIELD:-time}"
 
@@ -112,6 +113,7 @@ echo "Application alias:    $APPLICATION_ALIAS"
 echo "Platform alias:       $PLATFORM_ALIAS"
 echo "Application dataset:  Application Logs ($APPLICATION_DATASET_ID)"
 echo "Platform dataset:     Kubernetes Platform Logs ($PLATFORM_DATASET_ID)"
+echo "Default Logs dataset: $DEFAULT_LOG_DATASET_ID"
 echo "Composable templates matching future $LOG_INDEX_PATTERN: ${#matching_composable[@]}"
 if (("${#matching_composable[@]}" > 0)); then
   printf '  - %s\n' "${matching_composable[@]}"
@@ -149,6 +151,7 @@ os_curl "$OPENSEARCH_URL/_alias/$APPLICATION_ALIAS,$PLATFORM_ALIAS" > "$BACKUP/a
 printf '%s\n' "$SOURCE_OBJECT" > "$BACKUP/source-dataset.json"
 dash_curl "$DASHBOARDS_URL/w/$WORKSPACE_ID/api/saved_objects/index-pattern/$APPLICATION_DATASET_ID" > "$BACKUP/application-dataset.json" 2>/dev/null || true
 dash_curl "$DASHBOARDS_URL/w/$WORKSPACE_ID/api/saved_objects/index-pattern/$PLATFORM_DATASET_ID" > "$BACKUP/platform-dataset.json" 2>/dev/null || true
+dash_curl "$DASHBOARDS_URL/w/$WORKSPACE_ID/api/opensearch-dashboards/settings" > "$BACKUP/workspace-ui-settings.json" 2>/dev/null || true
 ok "Backup created: $BACKUP"
 
 if (("${#matching_composable[@]}" == 1)); then
@@ -222,6 +225,15 @@ upsert_dataset "$APPLICATION_DATASET_ID" "$APP_DATASET_BODY"
 upsert_dataset "$PLATFORM_DATASET_ID" "$PLATFORM_DATASET_BODY"
 ok "Explore Logs datasets created/updated"
 
+case "$DEFAULT_LOG_DATASET_ID" in
+  "$APPLICATION_DATASET_ID"|"$PLATFORM_DATASET_ID"|"$SOURCE_ID") ;;
+  *) die "DEFAULT_LOG_DATASET_ID '$DEFAULT_LOG_DATASET_ID' is not one of the managed Logs dataset IDs." ;;
+esac
+
+DEFAULT_RESPONSE="$(dash_curl -H 'Content-Type: application/json' -X POST   "$DASHBOARDS_URL/w/$WORKSPACE_ID/api/opensearch-dashboards/settings/defaultIndex"   --data-binary "$(jq -cn --arg value "$DEFAULT_LOG_DATASET_ID" '{value:$value}')")"
+[[ "$(jq -r '.settings.defaultIndex.userValue // empty' <<<"$DEFAULT_RESPONSE")" == "$DEFAULT_LOG_DATASET_ID" ]] ||   die "Failed to set workspace default dataset to '$DEFAULT_LOG_DATASET_ID': $DEFAULT_RESPONSE"
+ok "Workspace default dataset set to: $DEFAULT_LOG_DATASET_ID"
+
 APP_COUNT="$(os_curl "$OPENSEARCH_URL/$APPLICATION_ALIAS/_count" | jq -r '.count')"
 PLATFORM_COUNT="$(os_curl "$OPENSEARCH_URL/$PLATFORM_ALIAS/_count" | jq -r '.count')"
 [[ "$APP_COUNT" -gt 0 ]] || die "Application alias returned zero documents."
@@ -244,6 +256,7 @@ done
 ok "Application Logs documents: $APP_COUNT"
 ok "Kubernetes Platform Logs documents: $PLATFORM_COUNT"
 ok "Routine Fluent Bit success chatter hidden from platform dataset"
+ok "Default Logs dataset: $DEFAULT_LOG_DATASET_ID"
 ok "Explore Logs dataset standardization complete"
 echo "Backup: $BACKUP"
 echo "Refresh Discover > Logs in the browser and open the dataset selector."
