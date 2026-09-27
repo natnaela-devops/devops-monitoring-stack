@@ -87,7 +87,8 @@ See [Kubernetes Telemetry Onboarding](docs/05-kubernetes-telemetry-onboarding.md
 │   ├── 07-validation-and-evidence.md
 │   ├── 08-reference-uat-baseline.md
 │   ├── 09-reference-runtime-capture.md
-│   └── 10-sanitized-reference-runtime-contract.md
+│   ├── 10-sanitized-reference-runtime-contract.md
+│   └── 11-live-closeout.md
 ├── evidence/                           # Evidence policy; generated output stays local
 ├── kubernetes/
 │   ├── collector/                       # Collector, Service, RBAC, and configuration
@@ -132,6 +133,7 @@ Read the repository in this order:
 8. [Reference UAT Observability Baseline](docs/08-reference-uat-baseline.md)
 9. [Reference Runtime Capture](docs/09-reference-runtime-capture.md)
 10. [Sanitized Reference Runtime Contract](docs/10-sanitized-reference-runtime-contract.md)
+11. [Live Observability Closeout](docs/11-live-closeout.md)
 
 ## Lab-only OpenSearch start
 
