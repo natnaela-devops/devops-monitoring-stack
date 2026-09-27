@@ -1,0 +1,273 @@
+groups:
+
+  #####################################################################
+  # KUBERNETES AVAILABILITY
+  #####################################################################
+
+  - name: reference-kubernetes-availability
+    interval: 30s
+    rules:
+      - alert: KubernetesNodeNotReady
+        expr: |
+          kube_node_status_condition{
+            condition="Ready",
+            status="true"
+          } == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: infrastructure
+          environment: "{{ ENVIRONMENT }}"
+        annotations:
+          summary: "Kubernetes node {{ $labels.node }} is NotReady"
+          description: "RKE2 node {{ $labels.node }} has remained NotReady for at least 2 minutes."
+          threshold: "Ready=false for 2m"
+          impact: "Workloads on this node may become unavailable or be rescheduled."
+          action: "Check node conditions, RKE2/kubelet status, resource pressure, disk health, and network connectivity."
+          recovery: "Prometheus no longer reports this Kubernetes node as NotReady."
+
+  #####################################################################
+  # PROMETHEUS SCRAPE AVAILABILITY
+  #####################################################################
+
+  - name: reference-monitoring-targets
+    interval: 30s
+    rules:
+      - alert: PrometheusTargetDown
+        expr: |
+          up == 0
+        for: 2m
+        labels:
+          severity: warning
+          team: infrastructure
+          environment: "{{ ENVIRONMENT }}"
+        annotations:
+          summary: "Prometheus target {{ $labels.job }} is unreachable"
+          description: "Prometheus has been unable to scrape the {{ $labels.job }} target for at least 2 minutes."
+          threshold: "Scrape unavailable for 2m"
+          impact: "Monitoring visibility for this component is degraded."
+          action: "Verify the target process or exporter, endpoint reachability, network path, firewall rules, and Prometheus scrape configuration."
+          recovery: "Prometheus no longer reports this monitoring target as down."
+
+  #####################################################################
+  # DISK
+  #####################################################################
+
+  - name: reference-node-disk
+    interval: 30s
+    rules:
+      - alert: NodeDiskUsageHigh
+        expr: |
+          100 * (
+            1 -
+            (
+              node_filesystem_avail_bytes{
+                job="node-exporter",
+                fstype!~"tmpfs|overlay|squashfs|proc|sysfs|devtmpfs|devpts|cgroup2?|tracefs|securityfs|pstore|debugfs|mqueue|hugetlbfs|configfs|fusectl|autofs|binfmt_misc|rpc_pipefs"
+              }
+              /
+              node_filesystem_size_bytes{
+                job="node-exporter",
+                fstype!~"tmpfs|overlay|squashfs|proc|sysfs|devtmpfs|devpts|cgroup2?|tracefs|securityfs|pstore|debugfs|mqueue|hugetlbfs|configfs|fusectl|autofs|binfmt_misc|rpc_pipefs"
+              }
+            )
+          ) > 80
+        for: 15m
+        labels:
+          severity: warning
+          team: infrastructure
+          environment: "{{ ENVIRONMENT }}"
+        annotations:
+          summary: "Disk usage high on {{ $labels.node }}"
+          description: "Filesystem {{ $labels.mountpoint }} on {{ $labels.node }} has exceeded 80% usage for 15 minutes."
+          observed: '{{ printf "%.2f" $value }}%'
+          threshold: "> 80% for 15m"
+          impact: "Available storage is becoming limited. Capacity or retention should be reviewed."
+          action: "Review filesystem growth, retention, and available capacity before usage reaches the critical threshold."
+          recovery: "Prometheus no longer reports disk usage above the warning threshold."
+
+      - alert: NodeDiskUsageCritical
+        expr: |
+          100 * (
+            1 -
+            (
+              node_filesystem_avail_bytes{
+                job="node-exporter",
+                fstype!~"tmpfs|overlay|squashfs|proc|sysfs|devtmpfs|devpts|cgroup2?|tracefs|securityfs|pstore|debugfs|mqueue|hugetlbfs|configfs|fusectl|autofs|binfmt_misc|rpc_pipefs"
+              }
+              /
+              node_filesystem_size_bytes{
+                job="node-exporter",
+                fstype!~"tmpfs|overlay|squashfs|proc|sysfs|devtmpfs|devpts|cgroup2?|tracefs|securityfs|pstore|debugfs|mqueue|hugetlbfs|configfs|fusectl|autofs|binfmt_misc|rpc_pipefs"
+              }
+            )
+          ) > 90
+        for: 5m
+        labels:
+          severity: critical
+          team: infrastructure
+          environment: "{{ ENVIRONMENT }}"
+        annotations:
+          summary: "Disk usage CRITICAL on {{ $labels.node }}"
+          description: "Filesystem {{ $labels.mountpoint }} on {{ $labels.node }} has exceeded 90% usage for 5 minutes."
+          observed: '{{ printf "%.2f" $value }}%'
+          threshold: "> 90% for 5m"
+          impact: "The host is at risk of running out of disk space and disrupting services."
+          action: "Investigate filesystem growth immediately and confirm that retention or cleanup is operating correctly."
+          recovery: "Prometheus no longer reports disk usage above the critical threshold."
+
+  #####################################################################
+  # MEMORY
+  #####################################################################
+
+  - name: reference-node-memory
+    interval: 30s
+    rules:
+      - alert: NodeMemoryUsageHigh
+        expr: |
+          100 * (
+            1 -
+            (
+              node_memory_MemAvailable_bytes{job="node-exporter"}
+              /
+              node_memory_MemTotal_bytes{job="node-exporter"}
+            )
+          ) > 85
+        for: 10m
+        labels:
+          severity: warning
+          team: infrastructure
+          environment: "{{ ENVIRONMENT }}"
+        annotations:
+          summary: "Memory usage high on {{ $labels.node }}"
+          description: "Memory usage on {{ $labels.node }} has remained above 85% for 10 minutes."
+          observed: '{{ printf "%.2f" $value }}%'
+          threshold: "> 85% for 10m"
+          impact: "The node is under sustained memory pressure."
+          action: "Review memory-consuming processes and workloads, pod memory limits, and available node capacity."
+          recovery: "Prometheus no longer reports memory usage above the warning threshold."
+
+      - alert: NodeMemoryUsageCritical
+        expr: |
+          100 * (
+            1 -
+            (
+              node_memory_MemAvailable_bytes{job="node-exporter"}
+              /
+              node_memory_MemTotal_bytes{job="node-exporter"}
+            )
+          ) > 95
+        for: 5m
+        labels:
+          severity: critical
+          team: infrastructure
+          environment: "{{ ENVIRONMENT }}"
+        annotations:
+          summary: "Memory usage CRITICAL on {{ $labels.node }}"
+          description: "Memory usage on {{ $labels.node }} has remained above 95% for 5 minutes."
+          observed: '{{ printf "%.2f" $value }}%'
+          threshold: "> 95% for 5m"
+          impact: "The node is at risk of OOM kills and application disruption."
+          action: "Immediately identify high-memory workloads, check OOM activity and pod limits, and restore adequate memory headroom."
+          recovery: "Prometheus no longer reports memory usage above the critical threshold."
+
+  #####################################################################
+  # CPU
+  #####################################################################
+
+  - name: reference-node-cpu
+    interval: 30s
+    rules:
+      - alert: NodeCPUUsageHigh
+        expr: |
+          100 * (
+            1 -
+            avg by (node, ip) (
+              rate(
+                node_cpu_seconds_total{
+                  job="node-exporter",
+                  mode="idle"
+                }[5m]
+              )
+            )
+          ) > 85
+        for: 10m
+        labels:
+          severity: warning
+          team: infrastructure
+          environment: "{{ ENVIRONMENT }}"
+        annotations:
+          summary: "CPU usage high on {{ $labels.node }}"
+          description: "CPU utilization on {{ $labels.node }} has remained above 85% for 10 minutes."
+          observed: '{{ printf "%.2f" $value }}%'
+          threshold: "> 85% for 10m"
+          impact: "Sustained CPU pressure may increase latency and reduce application performance."
+          action: "Review CPU-consuming processes and workloads, pod CPU limits and requests, and node capacity."
+          recovery: "Prometheus no longer reports CPU usage above the warning threshold."
+
+      - alert: NodeCPUUsageCritical
+        expr: |
+          100 * (
+            1 -
+            avg by (node, ip) (
+              rate(
+                node_cpu_seconds_total{
+                  job="node-exporter",
+                  mode="idle"
+                }[5m]
+              )
+            )
+          ) > 95
+        for: 5m
+        labels:
+          severity: critical
+          team: infrastructure
+          environment: "{{ ENVIRONMENT }}"
+        annotations:
+          summary: "CPU usage CRITICAL on {{ $labels.node }}"
+          description: "CPU utilization on {{ $labels.node }} has remained above 95% for 5 minutes."
+          observed: '{{ printf "%.2f" $value }}%'
+          threshold: "> 95% for 5m"
+          impact: "The node is severely CPU saturated and service performance may be affected."
+          action: "Immediately identify CPU-intensive workloads, check throttling and pod limits, and restore adequate CPU headroom."
+          recovery: "Prometheus no longer reports CPU usage above the critical threshold."
+
+  #####################################################################
+  # RKE2 / CONTAINERD IMAGE FILESYSTEM
+  #####################################################################
+
+  - name: reference-rke2-image-gc
+    interval: 30s
+    rules:
+      - alert: RKE2ImageGCThresholdReached
+        expr: |
+          100 * (
+            1 -
+            (
+              node_filesystem_avail_bytes{
+                job="node-exporter",
+                mountpoint="/var/lib/rancher",
+                fstype!~"tmpfs|overlay|squashfs"
+              }
+              /
+              node_filesystem_size_bytes{
+                job="node-exporter",
+                mountpoint="/var/lib/rancher",
+                fstype!~"tmpfs|overlay|squashfs"
+              }
+            )
+          ) >= 85
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+          environment: "{{ ENVIRONMENT }}"
+          category: rke2-storage
+        annotations:
+          summary: "RKE2 storage usage high on {{ $labels.node }}"
+          description: "RKE2 storage {{ $labels.mountpoint }} on {{ $labels.node }} has remained at or above 85% usage for 5 minutes."
+          observed: '{{ printf "%.2f" $value }}%'
+          threshold: ">= 85% for 5m"
+          impact: "RKE2/containerd storage is under pressure and image garbage collection may be unable to reclaim sufficient space."
+          action: "Review /var/lib/rancher growth and containerd image usage, and confirm image garbage collection is operating before performing any manual cleanup."
+          recovery: "Prometheus no longer reports RKE2 storage usage at or above the warning threshold."

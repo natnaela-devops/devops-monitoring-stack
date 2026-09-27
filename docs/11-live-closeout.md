@@ -67,6 +67,19 @@ The live Prometheus API reported:
 - 16 alerting rules;
 - 0 recording rules.
 
+### Alerting standardization
+
+The final alerting pass preserved every validated PromQL expression and every
+`for:` duration while standardizing operator-facing metadata. The live rule
+set uses consistent severity, team, and environment labels plus summary,
+description, threshold, impact, action, and recovery annotations. Numeric
+`observed` annotations are included only when the rule value is meaningful.
+
+Telegram notifications use a shared Alertmanager template with explicit ALERT
+and RECOVERED states, Prometheus identified as the detector, Alertmanager as
+the notification component, and plain node/IP identity rather than exposing a
+scrape-target `IP:port` when cleaner labels are available.
+
 ### Telemetry presence
 
 The final verification confirmed that the derived request metric used by the

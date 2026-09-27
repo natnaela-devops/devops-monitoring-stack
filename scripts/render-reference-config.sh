@@ -151,6 +151,19 @@ render_template "$REPO_ROOT/observability-host/alertmanager/alertmanager.yml.exa
 install -m 0640 "$REPO_ROOT/observability-host/alertmanager/telegram.tmpl" "$OUTPUT_DIR/alertmanager/templates/observability-telegram.tmpl"
 install -m 0640 "$REPO_ROOT/observability-host/process-exporter/process-exporter.yml" "$OUTPUT_DIR/process-exporter/process-exporter.yml"
 
+render_template "$REPO_ROOT/prometheus/rules/infrastructure-alerts.yml.example" "$OUTPUT_DIR/prometheus/rules/infrastructure-alerts.yml"
+render_template "$REPO_ROOT/prometheus/rules/application-alerts.yml.example" "$OUTPUT_DIR/prometheus/rules/application-alerts.yml"
+
+python3 - "$REPO_ROOT/prometheus/rules/opensearch-apm-red.yml" "$OUTPUT_DIR/prometheus/rules/opensearch-apm-red.yml" <<'PY'
+import os, sys
+src, dst = sys.argv[1:3]
+text = open(src, encoding="utf-8").read()
+text = text.replace('"environment", "generic:default"', f'"environment", "{os.environ["ENVIRONMENT"]}"')
+open(dst, "w", encoding="utf-8").write(text)
+PY
+
+install -m 0640 "$REPO_ROOT/prometheus/rules/opensearch-apm-report.yml" "$OUTPUT_DIR/prometheus/rules/opensearch-apm-report.yml"
+
 python3 - "$REPO_ROOT/observability-host/prometheus/prometheus.yml.example" "$TARGETS_FILE" "$OUTPUT_DIR/prometheus/prometheus.yml" <<'PY'
 import json, os, re, sys
 template_path, targets_path, output_path=sys.argv[1:4]
@@ -221,7 +234,11 @@ chmod 0640 \
   "$OUTPUT_DIR/opensearch/opensearch.yml" \
   "$OUTPUT_DIR/opensearch/jvm.options.d/heap.options" \
   "$OUTPUT_DIR/data-prepper/config/data-prepper-config.yaml" \
-  "$OUTPUT_DIR/prometheus/prometheus.yml"
+  "$OUTPUT_DIR/prometheus/prometheus.yml" \
+  "$OUTPUT_DIR/prometheus/rules/infrastructure-alerts.yml" \
+  "$OUTPUT_DIR/prometheus/rules/application-alerts.yml" \
+  "$OUTPUT_DIR/prometheus/rules/opensearch-apm-red.yml" \
+  "$OUTPUT_DIR/prometheus/rules/opensearch-apm-report.yml"
 
 bash "$REPO_ROOT/scripts/validate-rendered-reference-config.sh" "$OUTPUT_DIR"
 ok "Reference configuration rendered: $OUTPUT_DIR"

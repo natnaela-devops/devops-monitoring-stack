@@ -88,7 +88,10 @@ See [Kubernetes Telemetry Onboarding](docs/05-kubernetes-telemetry-onboarding.md
 │   ├── 08-reference-uat-baseline.md
 │   ├── 09-reference-runtime-capture.md
 │   ├── 10-sanitized-reference-runtime-contract.md
-│   └── 11-live-closeout.md
+│   ├── 11-live-closeout.md
+│   ├── 12-developer-search-standardization.md
+│   ├── 13-explore-log-datasets.md
+│   └── 14-alerting-standard.md
 ├── evidence/                           # Evidence policy; generated output stays local
 ├── kubernetes/
 │   ├── collector/                       # Collector, Service, RBAC, and configuration
@@ -134,6 +137,9 @@ Read the repository in this order:
 9. [Reference Runtime Capture](docs/09-reference-runtime-capture.md)
 10. [Sanitized Reference Runtime Contract](docs/10-sanitized-reference-runtime-contract.md)
 11. [Live Observability Closeout](docs/11-live-closeout.md)
+12. [Developer Search Standardization](docs/12-developer-search-standardization.md)
+13. [Explore Logs Dataset Separation](docs/13-explore-log-datasets.md)
+14. [Alerting Standard](docs/14-alerting-standard.md)
 
 ## Lab-only OpenSearch start
 
