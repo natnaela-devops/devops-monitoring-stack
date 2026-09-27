@@ -91,7 +91,8 @@ See [Kubernetes Telemetry Onboarding](docs/05-kubernetes-telemetry-onboarding.md
 │   ├── 11-live-closeout.md
 │   ├── 12-developer-search-standardization.md
 │   ├── 13-explore-log-datasets.md
-│   └── 14-alerting-standard.md
+│   ├── 14-alerting-standard.md
+│   └── 15-ubuntu-2404-cleanroom-qualification.md
 ├── evidence/                           # Evidence policy; generated output stays local
 ├── kubernetes/
 │   ├── collector/                       # Collector, Service, RBAC, and configuration
@@ -118,7 +119,8 @@ The functional lab has demonstrated:
 - trace- and span-correlated application logs;
 - duplicate-log prevention between OTLP and Fluent Bit;
 - automatic Prometheus reporting discovery for newly instrumented services;
-- request, 4xx, 5xx, latency, availability, and error-budget calculations.
+- request, 4xx, 5xx, latency, availability, and error-budget calculations;
+- a fresh Ubuntu 24.04.5 LTS dedicated-host clean-room bootstrap, secured activation, and five-minute runtime soak with all seven observability services healthy, all configured Prometheus targets UP, and zero unhealthy Prometheus rules.
 
 This is a validated functional baseline, not a claim that the single-node lab topology is production ready.
 
@@ -140,6 +142,7 @@ Read the repository in this order:
 12. [Developer Search Standardization](docs/12-developer-search-standardization.md)
 13. [Explore Logs Dataset Separation](docs/13-explore-log-datasets.md)
 14. [Alerting Standard](docs/14-alerting-standard.md)
+15. [Ubuntu 24.04 Clean-Room Qualification](docs/15-ubuntu-2404-cleanroom-qualification.md)
 
 ## Lab-only OpenSearch start
 
