@@ -13,6 +13,7 @@ OPENSEARCH_USERNAME="${OPENSEARCH_USERNAME:-admin}"
 
 LOG_INDEX_PATTERN="${LOG_INDEX_PATTERN:-logs-v2-*}"
 SOURCE_DATASET_TITLE="${SOURCE_DATASET_TITLE:-logs-v2-*}"
+SOURCE_DATASET_ID="${SOURCE_DATASET_ID:-}"
 APPLICATION_ALIAS="${APPLICATION_ALIAS:-logs-application}"
 PLATFORM_ALIAS="${PLATFORM_ALIAS:-logs-platform}"
 APPLICATION_DATASET_ID="${APPLICATION_DATASET_ID:-std-logs-application-dataset}"
@@ -90,11 +91,29 @@ while IFS=$'\t' read -r name pattern; do
 done < <(jq -r '.index_templates[]? as $t | $t.index_template.index_patterns[]? | [$t.name,.] | @tsv' <<<"$INDEX_TEMPLATES")
 
 DATASETS="$(dash_curl "$DASHBOARDS_URL/w/$WORKSPACE_ID/api/saved_objects/_find?type=index-pattern&per_page=10000")"
-SOURCE_ID="$(jq -r --arg t "$SOURCE_DATASET_TITLE" '
-  [.saved_objects[] | select(.attributes.title==$t and (.attributes.signalType=="logs" or .attributes.signalType==null))]
-  | (map(select(.attributes.signalType=="logs")) + map(select(.attributes.signalType==null)))[0].id // empty
-' <<<"$DATASETS")"
-[[ -n "$SOURCE_ID" ]] || die "Could not find source log dataset with title '$SOURCE_DATASET_TITLE'."
+
+# Prefer an explicitly supplied source, then the already-standardized Application Logs
+# dataset, and only then the legacy/raw logs-v2-* dataset. This makes the raw saved
+# dataset removable after the initial bootstrap while keeping the script reusable.
+if [[ -n "$SOURCE_DATASET_ID" ]]; then
+  SOURCE_ID="$(jq -r --arg id "$SOURCE_DATASET_ID" '
+    [.saved_objects[] | select(.id==$id and (.attributes.signalType=="logs" or .attributes.signalType==null))][0].id // empty
+  ' <<<"$DATASETS")"
+  [[ -n "$SOURCE_ID" ]] || die "SOURCE_DATASET_ID '$SOURCE_DATASET_ID' was not found as a compatible Logs dataset."
+else
+  SOURCE_ID="$(jq -r --arg id "$APPLICATION_DATASET_ID" '
+    [.saved_objects[] | select(.id==$id and (.attributes.signalType=="logs" or .attributes.signalType==null))][0].id // empty
+  ' <<<"$DATASETS")"
+
+  if [[ -z "$SOURCE_ID" ]]; then
+    SOURCE_ID="$(jq -r --arg t "$SOURCE_DATASET_TITLE" '
+      [.saved_objects[] | select(.attributes.title==$t and (.attributes.signalType=="logs" or .attributes.signalType==null))]
+      | (map(select(.attributes.signalType=="logs")) + map(select(.attributes.signalType==null)))[0].id // empty
+    ' <<<"$DATASETS")"
+  fi
+fi
+
+[[ -n "$SOURCE_ID" ]] || die "Could not find a source Logs dataset. Set SOURCE_DATASET_ID explicitly or retain a '$SOURCE_DATASET_TITLE' bootstrap dataset."
 
 SOURCE_OBJECT="$(dash_curl "$DASHBOARDS_URL/w/$WORKSPACE_ID/api/saved_objects/index-pattern/$SOURCE_ID")"
 SOURCE_DISPLAY="$(jq -r '.attributes.displayName // .attributes.title' <<<"$SOURCE_OBJECT")"
