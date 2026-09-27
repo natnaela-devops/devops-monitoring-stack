@@ -25,7 +25,7 @@ The dedicated observability-host entries below were verified directly from the c
 
 | Component | Current pinned version | Scope / rationale |
 |---|---:|---|
-| Ubuntu Server | 22.04 LTS | Existing operating-system baseline |
+| Ubuntu Server | 22.04 LTS (temporary lab pin) | Existing clean-room lab qualification; the v1.0.0 release target is Ubuntu 24.04 LTS to match the operated reference. Promote the pin only after 24.04 clean-room qualification passes. |
 | RKE2 / Kubernetes | v1.35.7+rke2r1 / v1.35.7 | Existing cluster-side repository baseline; not changed by the dedicated-host parity test |
 | OpenSearch | 3.6.0 | Exact UAT reference version for v1 parity qualification |
 | OpenSearch Dashboards | 3.6.0 | Must exactly match OpenSearch |
@@ -46,6 +46,22 @@ The dedicated observability-host entries below were verified directly from the c
 ### Reference-UAT parity for v1
 
 The v1 qualification intentionally pins the exact versions already operating in the current UAT reference environment rather than introducing version changes while deployment automation, backup/restore, idempotency, RBAC, dashboards, and alerting are still being qualified. Version modernization will be handled as a separate, later change with the full validation lifecycle.
+
+### Ubuntu 24.04 clean-room baseline decision
+
+The operated UAT observability reference runs Ubuntu 24.04.4 LTS, while the
+first clean-room lab qualification was completed on Ubuntu 22.04.5 LTS.
+
+For v1.0.0, Ubuntu 24.04 LTS is the formal clean-room target because the release
+must reproduce the operated reference as closely as practical. Ubuntu 22.04
+remains the temporary repository pin only until the same clean-room bootstrap,
+configuration rendering, service startup, backup/restore, PKI/security
+initialization, saved-object restore, and closeout verification have passed on
+an isolated Ubuntu 24.04 host.
+
+Do not update `UBUNTU_VERSION` to 24.04-LTS or tag v1.0.0 before that
+qualification evidence exists. This keeps the repository from describing an
+untested operating-system baseline as validated.
 
 ### Dedicated-host OpenTelemetry Collector
 
