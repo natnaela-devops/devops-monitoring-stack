@@ -217,8 +217,8 @@ install -o root -g root -m 0644 "$UNIT_TEMPLATE" "$NEW_UNIT"
 systemctl daemon-reload
 
 rollback() {
-  warn="[ROLLBACK]"
-  printf '%s Restoring legacy service after failed cutover\n' "$warn" >&2
+  trap - ERR
+  printf '[ROLLBACK] Restoring legacy service after failed cutover\n' >&2
   systemctl stop "$NEW_SERVICE" >/dev/null 2>&1 || true
   systemctl start "$LEGACY_SERVICE" >/dev/null 2>&1 || true
 }
@@ -226,10 +226,28 @@ trap rollback ERR
 
 systemctl stop "$LEGACY_SERVICE"
 systemctl start "$NEW_SERVICE"
-systemctl is-active --quiet "$NEW_SERVICE"
 
-HTTP_CODE="$(curl -sS -o "$BACKUP/new-home.html" -w '%{http_code}' --max-time 15 "http://$BIND_ADDRESS:8088/")"
-[[ "$HTTP_CODE" == "200" ]] || die "New service returned HTTP $HTTP_CODE"
+HTTP_CODE=""
+for attempt in $(seq 1 30); do
+  if ! systemctl is-active --quiet "$NEW_SERVICE"; then
+    journalctl -u "$NEW_SERVICE" --no-pager -n 50 >&2 || true
+    die "$NEW_SERVICE stopped during startup."
+  fi
+
+  HTTP_CODE="$(curl -sS -o "$BACKUP/new-home.html" -w '%{http_code}' --connect-timeout 1 --max-time 2 "http://$BIND_ADDRESS:8088/" 2>/dev/null || true)"
+  if [[ "$HTTP_CODE" == "200" ]]; then
+    break
+  fi
+  sleep 0.5
+done
+
+[[ "$HTTP_CODE" == "200" ]] || {
+  ss -lntp | grep ':8088' >&2 || true
+  journalctl -u "$NEW_SERVICE" --no-pager -n 50 >&2 || true
+  die "New service did not become HTTP-ready on $BIND_ADDRESS:8088 within 15 seconds (last HTTP=$HTTP_CODE)."
+}
+ok "New service HTTP readiness verified"
+
 grep -Fq "$OBSERVABILITY_ENV_LABEL Developer Observability Search" "$BACKUP/new-home.html"
 grep -Fq "Developed by nhxttx" "$BACKUP/new-home.html"
 grep -Fq ">ENVIRONMENT<" "$BACKUP/new-home.html"
