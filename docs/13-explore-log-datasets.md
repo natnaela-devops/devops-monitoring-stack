@@ -7,8 +7,11 @@ two filtered OpenSearch aliases as real Logs datasets:
 - **Application Logs** -> `logs-application`
 - **Kubernetes Platform Logs** -> `logs-platform`
 
-The application/platform namespace lists are runtime inputs and are not
-committed to this public repository.
+The application/platform namespace lists, workspace ID, expected host, and
+other environment-specific values are runtime inputs and are not committed to
+this public repository. The script therefore remains reusable across UAT,
+production, or another bank/environment by supplying different values at run
+time.
 
 The platform alias suppresses routine Fluent Bit HTTP 200 success chatter while
 leaving those records in the raw backing indexes. The existing raw Logs dataset
@@ -31,7 +34,10 @@ When safe, `--apply`:
 3. attaches the filtered aliases to existing `logs-v2-*` indexes;
 4. clones the current raw Logs dataset metadata into two canonical Logs
    datasets;
-5. verifies namespace exclusivity and confirms routine Fluent Bit success
+5. sets **Application Logs** as the workspace default Logs dataset by default
+   (override with `DEFAULT_LOG_DATASET_ID` if another managed dataset should be
+   the default);
+6. verifies namespace exclusivity and confirms routine Fluent Bit success
    chatter is absent from the platform alias.
 
 The source raw dataset is not deleted or renamed.
