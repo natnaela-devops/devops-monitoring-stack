@@ -77,3 +77,27 @@ The migration preserves the existing OpenSearch HTTPS reader identity and
 systemd credential, copies the CA and password into standardized paths, validates
 the new application, cuts over port 8088, verifies the rendered identity, then
 retires the legacy paths/service.
+
+
+## Live qualification
+
+The standardized cutover was qualified on the operated UAT observability host.
+
+Sanitized closeout evidence:
+
+- `observability-search.service` is active and enabled;
+- the Python service is listening on the intended port 8088;
+- the root page returns HTTP 200;
+- the browser title renders the configured environment label;
+- the header renders `ENVIRONMENT` plus the configured environment badge;
+- the footer renders the dynamic year, environment label, and
+  `Developed by nhxttx`;
+- the application, runtime configuration, CA and systemd credential exist only
+  at the standardized paths;
+- the legacy service and legacy customer-named directories are absent;
+- the service journal contains a clean successful startup.
+
+The first cutover attempt also validated the rollback path: an early readiness
+check failed before the Python listener was ready, the legacy service was
+restored, and no legacy paths were retired. The migration was then corrected to
+wait for HTTP readiness and the second cutover passed.
