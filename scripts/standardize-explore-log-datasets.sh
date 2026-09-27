@@ -126,16 +126,18 @@ echo "The existing raw dataset is retained. Routine Fluent Bit HTTP 200 chatter 
 echo "excluded only from the platform alias/dataset, not deleted from OpenSearch."
 
 if [[ "$MODE" == "--plan" ]]; then
-  if (("${#matching_composable[@]}" > 0)); then
-    warn "A composable template matches future log indexes. Apply will stop until that template is handled safely."
-  else
+  if (("${#matching_composable[@]}" == 0)); then
     ok "Plan is safe for alias-only legacy template persistence."
+  elif (("${#matching_composable[@]}" == 1)); then
+    ok "Plan is safe: apply will patch composable template '${matching_composable[0]}' in place, preserving its existing settings/mappings and adding only the two filtered aliases."
+  else
+    warn "Multiple composable templates match future log indexes. Apply will stop because the active winner is ambiguous: ${matching_composable[*]}"
   fi
   exit 0
 fi
 
-if (("${#matching_composable[@]}" > 0)); then
-  die "Refusing apply: matching composable template(s) detected: ${matching_composable[*]}. Patch the active template instead of shadowing it."
+if (("${#matching_composable[@]}" > 1)); then
+  die "Refusing apply: multiple matching composable templates detected: ${matching_composable[*]}. Resolve template precedence first."
 fi
 
 STAMP="$(date +%Y%m%d-%H%M%S)"
@@ -149,10 +151,35 @@ dash_curl "$DASHBOARDS_URL/w/$WORKSPACE_ID/api/saved_objects/index-pattern/$APPL
 dash_curl "$DASHBOARDS_URL/w/$WORKSPACE_ID/api/saved_objects/index-pattern/$PLATFORM_DATASET_ID" > "$BACKUP/platform-dataset.json" 2>/dev/null || true
 ok "Backup created: $BACKUP"
 
-TEMPLATE_BODY="$(jq -cn   --arg p "$LOG_INDEX_PATTERN"   --arg app "$APPLICATION_ALIAS"   --arg platform "$PLATFORM_ALIAS"   --argjson af "$APP_FILTER"   --argjson pf "$PLATFORM_FILTER"   '{index_patterns:[$p],order:1000,aliases:{($app):{filter:$af},($platform):{filter:$pf}}}')"
+if (("${#matching_composable[@]}" == 1)); then
+  ACTIVE_TEMPLATE="${matching_composable[0]}"
+  ACTIVE_TEMPLATE_OBJECT="$(os_curl "$OPENSEARCH_URL/_index_template/$ACTIVE_TEMPLATE")"
+  printf '%s\n' "$ACTIVE_TEMPLATE_OBJECT" > "$BACKUP/composable-template-$ACTIVE_TEMPLATE.json"
 
-os_curl -H 'Content-Type: application/json' -X PUT   "$OPENSEARCH_URL/_template/$ALIAS_TEMPLATE_NAME"   --data-binary "$TEMPLATE_BODY" >/dev/null
-ok "Future-index alias template installed"
+  [[ "$(jq -r '.index_templates | length' <<<"$ACTIVE_TEMPLATE_OBJECT")" -eq 1 ]] || die "Could not read composable template '$ACTIVE_TEMPLATE'."
+  [[ "$(jq -r '.index_templates[0].index_template | has("data_stream")' <<<"$ACTIVE_TEMPLATE_OBJECT")" == "false" ]] || die "Template '$ACTIVE_TEMPLATE' is a data-stream template; refusing in-place alias patch."
+
+  ACTIVE_TEMPLATE_BODY="$(jq -c     --arg app "$APPLICATION_ALIAS"     --arg platform "$PLATFORM_ALIAS"     --argjson af "$APP_FILTER"     --argjson pf "$PLATFORM_FILTER"     '.index_templates[0].index_template
+     | .template = (.template // {})
+     | .template.aliases = ((.template.aliases // {}) + {
+         ($app):{filter:$af},
+         ($platform):{filter:$pf}
+       })' <<<"$ACTIVE_TEMPLATE_OBJECT")"
+
+  ACK="$(os_curl -H 'Content-Type: application/json' -X PUT     "$OPENSEARCH_URL/_index_template/$ACTIVE_TEMPLATE"     --data-binary "$ACTIVE_TEMPLATE_BODY")"
+  [[ "$(jq -r '.acknowledged // false' <<<"$ACK")" == "true" ]] || die "OpenSearch did not acknowledge composable template update: $ACK"
+
+  VERIFY_TEMPLATE="$(os_curl "$OPENSEARCH_URL/_index_template/$ACTIVE_TEMPLATE")"
+  [[ "$(jq -r --arg a "$APPLICATION_ALIAS" '.index_templates[0].index_template.template.aliases | has($a)' <<<"$VERIFY_TEMPLATE")" == "true" ]] || die "Application alias missing from patched template."
+  [[ "$(jq -r --arg a "$PLATFORM_ALIAS" '.index_templates[0].index_template.template.aliases | has($a)' <<<"$VERIFY_TEMPLATE")" == "true" ]] || die "Platform alias missing from patched template."
+  ok "Future-index aliases added to composable template: $ACTIVE_TEMPLATE"
+else
+  TEMPLATE_BODY="$(jq -cn     --arg p "$LOG_INDEX_PATTERN"     --arg app "$APPLICATION_ALIAS"     --arg platform "$PLATFORM_ALIAS"     --argjson af "$APP_FILTER"     --argjson pf "$PLATFORM_FILTER"     '{index_patterns:[$p],order:1000,aliases:{($app):{filter:$af},($platform):{filter:$pf}}}')"
+
+  ACK="$(os_curl -H 'Content-Type: application/json' -X PUT     "$OPENSEARCH_URL/_template/$ALIAS_TEMPLATE_NAME"     --data-binary "$TEMPLATE_BODY")"
+  [[ "$(jq -r '.acknowledged // false' <<<"$ACK")" == "true" ]] || die "OpenSearch did not acknowledge legacy alias template update: $ACK"
+  ok "Future-index alias-only legacy template installed"
+fi
 
 ALIASES_BODY="$(jq -cn   --arg idx "$LOG_INDEX_PATTERN"   --arg app "$APPLICATION_ALIAS"   --arg platform "$PLATFORM_ALIAS"   --argjson af "$APP_FILTER"   --argjson pf "$PLATFORM_FILTER"   '{actions:[
     {add:{index:$idx,alias:$app,filter:$af}},
