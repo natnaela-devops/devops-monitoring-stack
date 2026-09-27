@@ -1,0 +1,20 @@
+[Unit]
+Description=Developer Observability Search
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/observability-search/observability-search.env
+LoadCredential=opensearch-password:/etc/observability-search/credentials/opensearch-password
+ExecStart=/usr/bin/python3 /opt/observability-search/app.py
+Restart=on-failure
+RestartSec=3
+DynamicUser=yes
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target
