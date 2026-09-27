@@ -40,4 +40,8 @@ When safe, `--apply`:
 6. verifies namespace exclusivity and confirms routine Fluent Bit success
    chatter is absent from the platform alias.
 
-The source raw dataset is not deleted or renamed.
+After the initial bootstrap, the standardization script prefers the canonical
+**Application Logs** dataset as its metadata source. The legacy/raw `logs-v2-*`
+saved dataset can therefore be removed from the dataset selector once no
+remaining saved searches or dashboards depend on it. Removing that saved
+dataset does **not** remove the underlying `logs-v2-*` indexes.
