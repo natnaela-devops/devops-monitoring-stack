@@ -1,6 +1,6 @@
 # Version and Lifecycle Policy
 
-**Baseline date:** 2026-09-23  
+**Baseline date:** 2026-09-27  
 **Scope:** RKE2 application cluster and the dedicated OpenSearch observability platform.
 
 ## Objective
@@ -25,7 +25,7 @@ The dedicated observability-host entries below were verified directly from the c
 
 | Component | Current pinned version | Scope / rationale |
 |---|---:|---|
-| Ubuntu Server | 22.04 LTS (temporary lab pin) | Existing clean-room lab qualification; the v1.0.0 release target is Ubuntu 24.04 LTS to match the operated reference. Promote the pin only after 24.04 clean-room qualification passes. |
+| Ubuntu Server | 22.04 LTS (temporary release pin) | Ubuntu 24.04.5 LTS dedicated-host clean-room bootstrap, security initialization, activation, and five-minute runtime soak passed on 2026-09-27. Keep the release pin unchanged until the remaining repository release gates described below are completed. |
 | RKE2 / Kubernetes | v1.35.7+rke2r1 / v1.35.7 | Existing cluster-side repository baseline; not changed by the dedicated-host parity test |
 | OpenSearch | 3.6.0 | Exact UAT reference version for v1 parity qualification |
 | OpenSearch Dashboards | 3.6.0 | Must exactly match OpenSearch |
@@ -52,16 +52,21 @@ The v1 qualification intentionally pins the exact versions already operating in 
 The operated UAT observability reference runs Ubuntu 24.04.4 LTS, while the
 first clean-room lab qualification was completed on Ubuntu 22.04.5 LTS.
 
-For v1.0.0, Ubuntu 24.04 LTS is the formal clean-room target because the release
-must reproduce the operated reference as closely as practical. Ubuntu 22.04
-remains the temporary repository pin only until the same clean-room bootstrap,
-configuration rendering, service startup, backup/restore, PKI/security
-initialization, saved-object restore, and closeout verification have passed on
-an isolated Ubuntu 24.04 host.
+On 2026-09-27, a fresh Ubuntu 24.04.5 LTS VM completed the dedicated-host
+clean-room bootstrap, private PKI generation, OpenSearch Security
+initialization, service activation, configuration validation, and a five-minute
+runtime soak. All seven observability-host services remained active, all
+configured Prometheus targets were UP, all Prometheus rules were healthy, and
+no OOM or failed-systemd condition was observed.
 
-Do not update `UBUNTU_VERSION` to 24.04-LTS or tag v1.0.0 before that
-qualification evidence exists. This keeps the repository from describing an
-untested operating-system baseline as validated.
+This closes the Ubuntu 24.04 **host-runtime** qualification. The repository
+release pin remains unchanged until the separately documented release gates
+that were not exercised by this isolated host test—such as saved-object
+restore and backup/restore qualification—are completed. See
+`docs/15-ubuntu-2404-cleanroom-qualification.md`.
+
+Do not treat the successful single-host qualification as production-HA,
+capacity, backup/restore, or Kubernetes-side telemetry qualification.
 
 ### Dedicated-host OpenTelemetry Collector
 
