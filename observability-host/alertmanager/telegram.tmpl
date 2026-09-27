@@ -1,12 +1,15 @@
 {{ define "telegram.observability.message" -}}
-{{ if eq .Status "firing" }}🚨 {{ .CommonLabels.alertname }}{{ else }}✅ RESOLVED — {{ .CommonLabels.alertname }}{{ end }}
-{{- if .CommonLabels.severity }}
-{{ .CommonLabels.severity | toUpper }}{{ if .CommonLabels.environment }} | {{ .CommonLabels.environment }}{{ end }}
-{{- end }}
+{{ if eq .Status "firing" -}}
+{{ if eq .CommonLabels.severity "critical" }}🚨 ALERT — CRITICAL{{ else if eq .CommonLabels.severity "warning" }}⚠️ ALERT — WARNING{{ else }}🚨 ALERT{{ end }}
+{{ else -}}
+✅ RECOVERED
+{{ end }}
+
+Alert: {{ .CommonLabels.alertname }}
+{{ if .CommonLabels.environment }}Environment: {{ .CommonLabels.environment }}{{ end }}
+{{ if .CommonLabels.team }}Team: {{ .CommonLabels.team }}{{ end }}
 
 {{ range .Alerts -}}
-{{ if eq $.Status "firing" }}{{ if .Annotations.summary }}{{ .Annotations.summary }}
-{{ end }}{{ end -}}
 {{ if .Labels.service }}Service: {{ .Labels.service }}
 {{ end -}}
 {{ if .Labels.node }}Node: {{ .Labels.node }}
@@ -19,9 +22,44 @@
 {{ end -}}
 {{ if .Labels.container }}Container: {{ .Labels.container }}
 {{ end -}}
-{{ if .Labels.mountpoint }}Mount: {{ .Labels.mountpoint }}
+{{ if .Labels.mountpoint }}Resource: {{ .Labels.mountpoint }}
 {{ end -}}
-{{ if eq $.Status "resolved" }}Condition cleared.
+{{ if eq $.Status "firing" -}}
+{{ if .Annotations.observed }}Observed: {{ .Annotations.observed }}
+{{ end -}}
+{{ if .Annotations.threshold }}Threshold: {{ .Annotations.threshold }}
+{{ end }}
+Detected By: Prometheus
+{{ if .Labels.job }}Metric Source: {{ .Labels.job }}
+{{ end -}}
+Notification By: Alertmanager
+
+{{ if .Annotations.summary }}Summary:
+{{ .Annotations.summary }}
+{{ end -}}
+{{ if .Annotations.description }}
+Description:
+{{ .Annotations.description }}
+{{ end -}}
+{{ if .Annotations.impact }}
+Impact:
+{{ .Annotations.impact }}
+{{ end -}}
+{{ if .Annotations.action }}
+Recommended Action:
+{{ .Annotations.action }}
+{{ end -}}
+{{ else -}}
+Detected By: Prometheus
+{{ if .Labels.job }}Metric Source: {{ .Labels.job }}
+{{ end -}}
+Notification By: Alertmanager
+
+Recovery:
+{{ if .Annotations.recovery }}{{ .Annotations.recovery }}{{ else }}The monitored condition is no longer breaching its configured alert threshold.{{ end }}
+
+Note:
+This confirms recovery of the monitored condition. Recovery may have been automatic or operator-driven.
 {{ end }}
 {{ end -}}
 {{ end }}
