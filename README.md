@@ -101,7 +101,7 @@ See [Kubernetes Telemetry Onboarding](docs/05-kubernetes-telemetry-onboarding.md
 │   ├── instrumentation/                 # Shared opt-in Instrumentation resource
 │   └── operator/                        # Pinned Operator Helm values
 ├── prometheus/
-│   └── rules/                           # Platform alerts, RED, SLO, and report rules
+│   └── rules/                           # Standardized alerts plus optional recording/reporting rules
 ├── scripts/
 │   └── validate-platform.sh             # Read-only end-to-end acceptance checks
 ├── prometheus.yml                       # Remote-write receiver and local scrape baseline
@@ -119,7 +119,7 @@ The functional lab has demonstrated:
 - a gateway-to-payment distributed trace and v2 service-map relationship;
 - trace- and span-correlated application logs;
 - duplicate-log prevention between OTLP and Fluent Bit;
-- automatic Prometheus reporting discovery for newly instrumented services;
+- automatic service-derived RED metric discovery for newly instrumented services;
 - request, 4xx, 5xx, latency, availability, and error-budget calculations;
 - a fresh Ubuntu 24.04.5 LTS dedicated-host clean-room bootstrap, secured activation, and five-minute runtime soak with all seven observability services healthy, all configured Prometheus targets UP, and zero unhealthy Prometheus rules.
 
