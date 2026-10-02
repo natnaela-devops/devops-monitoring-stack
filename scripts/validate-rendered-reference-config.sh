@@ -16,10 +16,9 @@ required=(
   prometheus/prometheus.yml
   prometheus/rules/infrastructure-alerts.yml
   prometheus/rules/application-alerts.yml
-  prometheus/rules/opensearch-apm-red.yml
-  prometheus/rules/opensearch-apm-report.yml
+  prometheus/rules/platform-alerts.yml
   alertmanager/alertmanager.yml
-  alertmanager/templates/observability-telegram.tmpl
+  alertmanager/templates/telegram.tmpl
   process-exporter/process-exporter.yml
 )
 for rel in "${required[@]}"; do
@@ -57,7 +56,11 @@ grep -qE '^[[:space:]]+evaluation_interval:[[:space:]]+30s$' "$ROOT/prometheus/p
 grep -q '127.0.0.1:9256' "$ROOT/prometheus/prometheus.yml" || die "process-exporter scrape missing"
 ok "Prometheus reference baseline present"
 
+grep -q 'group_wait: 30s' "$ROOT/alertmanager/alertmanager.yml" || die "Alertmanager group wait mismatch"
+grep -q 'group_interval: 5m' "$ROOT/alertmanager/alertmanager.yml" || die "Alertmanager group interval mismatch"
 grep -q 'repeat_interval: 4h' "$ROOT/alertmanager/alertmanager.yml" || die "Alertmanager repeat interval mismatch"
+grep -q 'receiver: telegram-observability' "$ROOT/alertmanager/alertmanager.yml" || die "Alertmanager receiver naming mismatch"
+[[ "$(grep -c '^[[:space:]]*-[[:space:]]*source_matchers:' "$ROOT/alertmanager/alertmanager.yml" || true)" -eq 4 ]] || die "Alertmanager inhibition-rule count mismatch"
 grep -q 'send_resolved: true' "$ROOT/alertmanager/alertmanager.yml" || die "Alertmanager resolved notifications disabled"
 ok "Alertmanager reference routing present"
 
