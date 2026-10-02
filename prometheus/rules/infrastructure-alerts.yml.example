@@ -4,7 +4,7 @@ groups:
   # KUBERNETES AVAILABILITY
   #####################################################################
 
-  - name: reference-kubernetes-availability
+  - name: observability-kubernetes-availability
     interval: 30s
     rules:
       - alert: KubernetesNodeNotReady
@@ -30,7 +30,7 @@ groups:
   # PROMETHEUS SCRAPE AVAILABILITY
   #####################################################################
 
-  - name: reference-monitoring-targets
+  - name: observability-monitoring-targets
     interval: 30s
     rules:
       - alert: PrometheusTargetDown
@@ -53,7 +53,7 @@ groups:
   # DISK
   #####################################################################
 
-  - name: reference-node-disk
+  - name: observability-node-filesystem
     interval: 30s
     rules:
       - alert: NodeDiskUsageHigh
@@ -120,7 +120,7 @@ groups:
   # MEMORY
   #####################################################################
 
-  - name: reference-node-memory
+  - name: observability-node-memory
     interval: 30s
     rules:
       - alert: NodeMemoryUsageHigh
@@ -175,7 +175,7 @@ groups:
   # CPU
   #####################################################################
 
-  - name: reference-node-cpu
+  - name: observability-node-cpu
     interval: 30s
     rules:
       - alert: NodeCPUUsageHigh
@@ -236,7 +236,7 @@ groups:
   # RKE2 / CONTAINERD IMAGE FILESYSTEM
   #####################################################################
 
-  - name: reference-rke2-image-gc
+  - name: observability-rke2-storage
     interval: 30s
     rules:
       - alert: RKE2ImageGCThresholdReached
