@@ -1,0 +1,77 @@
+{
+  "saved_objects": [
+    {
+      "id": "std-dev-http-routes-requests",
+      "type": "search",
+      "attributes": {
+        "title": "HTTP Routes & Requests",
+        "description": "HTTP server spans for request-level investigation using service, route, status, duration and trace ID.",
+        "columns": [
+          "serviceName",
+          "span.attributes.http@request@method",
+          "span.attributes.http@route",
+          "span.attributes.http@response@status_code",
+          "durationInNanos",
+          "traceId"
+        ],
+        "sort": [
+          [
+            "endTime",
+            "desc"
+          ]
+        ],
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"query\":{\"query\":\"kind:\\\"SPAN_KIND_SERVER\\\" and instrumentationScope.name.keyword:\\\"io.opentelemetry.tomcat-10.0\\\"\",\"language\":\"kuery\"},\"filter\":[],\"indexRefName\":\"kibanaSavedObjectMeta.searchSourceJSON.index\"}"
+        }
+      },
+      "references": [
+        {
+          "name": "kibanaSavedObjectMeta.searchSourceJSON.index",
+          "type": "index-pattern",
+          "id": "std-apm-span-data-view"
+        }
+      ],
+      "migrationVersion": {
+        "search": "7.9.3"
+      }
+    },
+    {
+      "id": "std-logs-application",
+      "type": "search",
+      "attributes": {
+        "title": "Application Logs",
+        "description": "Application workload logs from the standardized application-log data view. Includes Kubernetes workload metadata and trace/span IDs when present.",
+        "columns": [
+          "level",
+          "serviceName",
+          "kubernetes.namespace_name",
+          "kubernetes.pod_name",
+          "kubernetes.container_name",
+          "logger",
+          "traceId",
+          "spanId",
+          "message"
+        ],
+        "sort": [
+          [
+            "time",
+            "desc"
+          ]
+        ],
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"query\":{\"query\":\"\",\"language\":\"kuery\"},\"filter\":[],\"indexRefName\":\"kibanaSavedObjectMeta.searchSourceJSON.index\"}"
+        }
+      },
+      "references": [
+        {
+          "name": "kibanaSavedObjectMeta.searchSourceJSON.index",
+          "id": "std-logs-application-dataset",
+          "type": "index-pattern"
+        }
+      ],
+      "migrationVersion": {
+        "search": "7.9.3"
+      }
+    }
+  ]
+}
