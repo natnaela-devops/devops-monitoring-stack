@@ -1,0 +1,36 @@
+groups:
+  - name: observability-platform-health
+    interval: 1m
+    rules:
+      - alert: KubernetesPodCrashLoopBackOff
+        expr: kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"} == 1
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+          environment: "{{ ENVIRONMENT }}"
+          category: platform
+        annotations:
+          summary: "Pod container is in CrashLoopBackOff"
+          description: "{{ $labels.namespace }}/{{ $labels.pod }} container {{ $labels.container }} has remained in CrashLoopBackOff for 5 minutes."
+          threshold: "CrashLoopBackOff for 5m"
+          impact: "The affected workload may be degraded or unavailable while the container repeatedly fails to start."
+          action: "Check pod events, container logs, exit reason, configuration, secrets, dependencies, resource limits, and the most recent deployment change."
+          recovery: "Prometheus no longer reports this container in CrashLoopBackOff."
+
+      - alert: PrometheusAlertmanagerUnavailable
+        expr: prometheus_notifications_alertmanagers_discovered < 1
+        for: 2m
+        labels:
+          severity: critical
+          team: infrastructure
+          environment: "{{ ENVIRONMENT }}"
+          category: monitoring
+        annotations:
+          summary: "Prometheus has no Alertmanager target"
+          description: "Prometheus has discovered zero Alertmanager instances for at least 2 minutes."
+          observed: '{{ printf "%.0f" $value }} discovered'
+          threshold: "< 1 discovered Alertmanager for 2m"
+          impact: "Prometheus may be unable to deliver alerts to Alertmanager, preventing downstream notifications."
+          action: "Check the Alertmanager service, Prometheus alerting configuration, service discovery, endpoint reachability, and network connectivity."
+          recovery: "Prometheus no longer reports zero discovered Alertmanager targets."

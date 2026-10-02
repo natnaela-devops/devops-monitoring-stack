@@ -4,40 +4,84 @@
 
 This repository keeps alert detection, routing, presentation, and secrets separate so the same alerting design can be reused across lab, UAT, and production environments.
 
-The standardized contract was validated against the operated UAT reference environment and then sanitized for repository use.
+The final live contract was validated against the operated UAT reference environment and sanitized for repository use.
 
 ## Responsibility split
 
 - **Exporters / application telemetry** provide metrics.
-- **Prometheus** evaluates alert rules and determines when a condition is firing or recovered.
-- **Alertmanager** groups, routes, and delivers notifications.
+- **Prometheus** evaluates alert rules and determines when a condition is pending, firing, or recovered.
+- **Alertmanager** groups, inhibits, routes, and delivers notifications.
 - **Telegram** is a notification destination only.
 
-Telegram messages therefore identify Prometheus as the detector and Alertmanager as the notification component. When a metric has a useful source label such as `job=node-exporter`, the template exposes that as the metric source.
+Telegram messages identify Prometheus as the detector and Alertmanager as the notification component. When a metric has a useful source label such as `job=node-exporter`, the template exposes that as the metric source.
+
+## Naming contract
+
+Prometheus rule files use functional, environment-neutral names:
+
+- `application-alerts.yml`;
+- `platform-alerts.yml`;
+- `infrastructure-alerts.yml`.
+
+Rule groups use lowercase kebab-case and the `observability-` prefix:
+
+- `observability-application-errors`;
+- `observability-application-latency`;
+- `observability-platform-health`;
+- `observability-kubernetes-availability`;
+- `observability-monitoring-targets`;
+- `observability-node-cpu`;
+- `observability-node-memory`;
+- `observability-node-filesystem`;
+- `observability-rke2-storage`.
+
+Alert names are stable PascalCase identifiers such as `NodeDiskUsageHigh` and `ApplicationP99LatencyCritical`. Customer names and environment names do not belong in alert or rule-group identifiers; deployment scope belongs in labels such as `environment`.
 
 ## Alert labels
 
-Every operational alert should provide:
+Every operational alert provides:
 
 - `severity`: normally `warning` or `critical`;
 - `team`: for example `infrastructure` or `application`;
 - `environment`: rendered from the target deployment environment.
 
-Additional category labels may be used when useful.
+Additional category labels are used where useful.
 
 ## Alert annotations
 
 Use the following operator-facing annotation contract where semantically meaningful:
 
-- `summary`: short human-readable problem statement;
-- `description`: what condition has persisted and for how long;
-- `observed`: current measured value when the alert expression produces a meaningful numeric value;
-- `threshold`: configured trigger condition;
-- `impact`: likely operational or user impact;
-- `action`: first investigation or remediation step;
-- `recovery`: factual statement describing what condition is no longer being reported.
+- `summary`;
+- `description`;
+- `observed` when the expression produces a meaningful numeric value;
+- `threshold`;
+- `impact`;
+- `action`;
+- `recovery`.
 
 Do not invent an `observed` value for binary conditions such as NotReady or CrashLoopBackOff.
+
+## Alertmanager contract
+
+The reusable naming contract is:
+
+- receiver: `telegram-observability`;
+- template: `telegram.observability.message`;
+- template file: `telegram.tmpl`.
+
+The validated routing timing is:
+
+- `group_wait: 30s`;
+- `group_interval: 5m`;
+- `repeat_interval: 4h`;
+- `send_resolved: true`.
+
+The final configuration inhibits a warning when the matching critical alert is firing for the same resource:
+
+- node filesystem usage: match by environment, node, and mountpoint;
+- node CPU usage: match by environment and node;
+- node memory usage: match by environment and node;
+- application P99 latency: match by environment and service.
 
 ## Telegram presentation
 
@@ -54,43 +98,42 @@ Recovered notifications use:
 ✅ RECOVERED
 ```
 
-The standard template prefers human-readable resource identity:
+The presentation is grouped and compact. Common threshold, impact, and action context should not be repeated unnecessarily for every resource in the same notification group.
 
-- Service
-- Node
-- plain IP address
-- Namespace / Pod / Container
-- Resource / mountpoint
-
-It intentionally does **not** show Prometheus scrape-target `instance=IP:port` when a cleaner node/IP identity is already available.
+The template prefers human-readable resource identity and does not expose a raw scrape-target `IP:port` when cleaner node/IP labels are available.
 
 A recovery notification means that Prometheus no longer reports the configured alert condition. It does not claim whether recovery was automatic or operator-driven.
 
+## Live rule architecture versus optional recording rules
+
+The operated UAT baseline uses 16 alerting rules and 0 recording rules. Its live `span_derived` RED metrics are produced by the Data Prepper service-map Prometheus sink.
+
+The repository may retain optional recording/reporting rule examples for environments that derive or precompute those metrics differently. Such optional rules must not be assumed to be active in the live baseline.
+
 ## Repository files
 
-- `prometheus/rules/infrastructure-alerts.yml.example` — standardized infrastructure alerts;
-- `prometheus/rules/application-alerts.yml.example` — standardized application and supplemental platform alerts;
-- `observability-host/alertmanager/telegram.tmpl` — common Telegram presentation template;
-- `observability-host/alertmanager/alertmanager.yml.example` — sanitized routing example.
+- `prometheus/rules/infrastructure-alerts.yml.example`;
+- `prometheus/rules/application-alerts.yml.example`;
+- `prometheus/rules/platform-alerts.yml.example`;
+- `observability-host/alertmanager/telegram.tmpl`;
+- `observability-host/alertmanager/alertmanager.yml.example`.
 
-The reference configuration renderer converts the environment-aware rule examples into deployable `.yml` rule files and validates them with `promtool`.
+The reference renderer substitutes deployment-specific environment values and validates generated rule files with `promtool`.
+
+## Change safety
+
+Operational changes follow:
+
+`backup -> stage -> validate -> apply/reload -> verify -> retain rollback`.
+
+A configuration change is not accepted merely because the service reloads. Prometheus rules must complete evaluation without `health="err"` or `lastError`, and Alertmanager must pass configuration validation.
 
 ## Secret handling
 
-Never commit:
+Never commit Telegram bot tokens, real deployment chat IDs, OpenSearch passwords, private keys, kubeconfigs, bearer tokens, internal hostnames, or private addresses.
 
-- Telegram bot tokens;
-- real Telegram chat IDs used by a customer environment;
-- OpenSearch passwords;
-- private keys;
-- kubeconfigs or bearer tokens.
+The Telegram bot token is read from a private file. Deployment-specific chat IDs remain outside the public repository.
 
-The bot token is read from a private file. On the validated reference host the token-file access model is equivalent to owner/group read only for the service account that needs it.
+## Delivery limitation
 
-A chat ID is an identifier rather than an authentication credential, but real deployment-specific IDs should still remain outside the public repository.
-
-## Recovery and delivery notes
-
-`send_resolved: true` remains enabled so operators receive recovery notifications.
-
-A Prometheus rule such as `PrometheusAlertmanagerUnavailable` is still useful for Prometheus-side visibility, but if the only Alertmanager instance is actually unavailable it cannot deliver its own Telegram notification. An independent watchdog is a future hardening option and is not required for the current functional baseline.
+`PrometheusAlertmanagerUnavailable` is useful for Prometheus-side visibility, but an unavailable sole Alertmanager instance cannot deliver its own Telegram notification. Independent watchdog delivery is a production-hardening option.

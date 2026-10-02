@@ -107,7 +107,7 @@ The lab produced the following results:
 - Collector rollout completed without warnings or errors.
 - Dedicated Collector RBAC returned `yes` for required reads and no write permissions were granted.
 - A newly Operator-instrumented Java service exported traces, logs, and metrics.
-- The reporting rules discovered the new service automatically.
+- Service-derived RED metrics appeared automatically for the newly instrumented service through the Collector/Data Prepper/Prometheus path.
 - Kubernetes metadata existed in both log and span resource attributes.
 - Four business log records shared one trace across the gateway and payment services.
 - Fluent Bit exclusion removed the two duplicate, uncorrelated gateway log records.

@@ -1,5 +1,5 @@
 groups:
-  - name: reference-application-errors
+  - name: observability-application-errors
     interval: 1m
     rules:
       - alert: Application4xxRateHigh
@@ -53,7 +53,7 @@ groups:
           action: "Check service health, pods, recent deployments, application errors, dependencies, and correlated traces or logs."
           recovery: "Prometheus no longer reports application availability below the configured threshold."
 
-  - name: reference-application-latency
+  - name: observability-application-latency
     interval: 1m
     rules:
       - alert: ApplicationP99LatencyHigh
@@ -89,39 +89,3 @@ groups:
           impact: "Users may experience severe response delays and application timeouts."
           action: "Immediately review slow traces, service resource pressure, downstream dependencies, database calls, and recent deployments."
           recovery: "Prometheus no longer reports P99 latency above the critical threshold for this service."
-
-  - name: reference-platform-supplement
-    interval: 1m
-    rules:
-      - alert: KubernetesPodCrashLoopBackOff
-        expr: kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"} == 1
-        for: 5m
-        labels:
-          severity: warning
-          team: infrastructure
-          environment: "{{ ENVIRONMENT }}"
-          category: platform
-        annotations:
-          summary: "Pod container is in CrashLoopBackOff"
-          description: "{{ $labels.namespace }}/{{ $labels.pod }} container {{ $labels.container }} has remained in CrashLoopBackOff for 5 minutes."
-          threshold: "CrashLoopBackOff for 5m"
-          impact: "The affected workload may be degraded or unavailable while the container repeatedly fails to start."
-          action: "Check pod events, container logs, exit reason, configuration, secrets, dependencies, resource limits, and the most recent deployment change."
-          recovery: "Prometheus no longer reports this container in CrashLoopBackOff."
-
-      - alert: PrometheusAlertmanagerUnavailable
-        expr: prometheus_notifications_alertmanagers_discovered < 1
-        for: 2m
-        labels:
-          severity: critical
-          team: infrastructure
-          environment: "{{ ENVIRONMENT }}"
-          category: monitoring
-        annotations:
-          summary: "Prometheus has no Alertmanager target"
-          description: "Prometheus has discovered zero Alertmanager instances for at least 2 minutes."
-          observed: '{{ printf "%.0f" $value }} discovered'
-          threshold: "< 1 discovered Alertmanager for 2m"
-          impact: "Prometheus may be unable to deliver alerts to Alertmanager, preventing downstream notifications."
-          action: "Check the Alertmanager service, Prometheus alerting configuration, service discovery, endpoint reachability, and network connectivity."
-          recovery: "Prometheus no longer reports zero discovered Alertmanager targets."

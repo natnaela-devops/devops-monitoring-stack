@@ -68,7 +68,7 @@ The observability system is not part of the business request path. If the observ
 | Node telemetry agent | Optional DaemonSet | One per eligible worker | Reads node-local logs and host telemetry |
 | Fluent Bit | Existing DaemonSet, if retained | One per worker | Kubernetes container log collection |
 | Data Prepper | Platform service | Dedicated observability host(s) | Trace/log processing and service-map generation |
-| Prometheus | Platform service | Dedicated observability host(s) | Metrics storage, RED rules, SLO calculations |
+| Prometheus | Platform service | Dedicated observability host(s) | Metrics storage, remote-write ingestion, alert evaluation, and optional derived/reporting rules |
 | OpenSearch | Stateful platform | Dedicated observability host(s) | Trace, log, and service-map storage |
 | OpenSearch Dashboards | Platform service | Dedicated observability host(s) | APM, search, dashboards, and reporting |
 
@@ -86,12 +86,13 @@ The observability system is not part of the business request path. If the observ
 
 ### Metrics
 
-1. Application agents produce runtime and HTTP metrics.
-2. Collectors receive OTLP metrics and scrape approved cluster targets.
-3. Resource attributes are converted to stable Prometheus labels.
-4. Collectors remote-write metrics to Prometheus.
-5. Generic recording rules calculate request, error, fault, latency, availability, and error-budget values by service and environment.
-6. A reusable dashboard selects any discovered service without creating service-specific rules.
+1. Application agents and Kubernetes integrations produce runtime, request, workload, and platform metrics.
+2. The in-cluster Collector receives OTLP metrics and scrapes approved Kubernetes targets.
+3. Resource attributes are converted to stable Prometheus labels and metrics are remote-written to Prometheus.
+4. Data Prepper's service-map processing emits the live `span_derived` RED metric family (`request`, `error`, `fault`, and `latency_seconds_bucket`) directly to Prometheus through its Prometheus sink.
+5. Prometheus evaluates reusable alert rules against those metrics and the host/Kubernetes metric sources.
+6. Optional recording/reporting rules may be enabled for deployments that require precomputed reports, but they are not required for the validated live RED path.
+7. Reusable dashboards select discovered services without creating service-specific alert rules.
 
 ### Logs
 

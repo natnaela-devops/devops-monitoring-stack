@@ -19,7 +19,7 @@ They intentionally contain no addresses, credentials, certificates, or environme
 | `systemd/alertmanager.service` | `/etc/systemd/system/alertmanager.service` | Pinned Alertmanager process definition |
 | `systemd/node_exporter.service` | `/etc/systemd/system/node_exporter.service` | Reference node_exporter definition on port 9115 |
 | `alertmanager/alertmanager.yml.example` | `/etc/alertmanager/alertmanager.yml` | Reference alert routing without secrets |
-| `alertmanager/telegram.tmpl` | `/etc/alertmanager/templates/observability-telegram.tmpl` | Generic Telegram alert format |
+| `alertmanager/telegram.tmpl` | `/etc/alertmanager/templates/telegram.tmpl` | Generic Telegram alert format |
 | `prometheus/prometheus.yml.example` | `/etc/prometheus/prometheus.yml` | Parameterized 30-second scrape/evaluation baseline |
 | `process-exporter/process-exporter.yml` | `/etc/process-exporter/process-exporter.yml` | Reference process grouping |
 | `systemd/process-exporter.service` | `/etc/systemd/system/process-exporter.service` | Pinned process-exporter definition |
@@ -42,6 +42,8 @@ bash scripts/bootstrap-reference-binaries.sh --apply
 The bootstrap installs the exact versions pinned in `versions.env`, verifies signed/checksummed artifacts where upstream verification material is available, installs canonical systemd unit definitions, and deliberately leaves all observability services stopped. Configuration and service activation are a separate qualification stage.
 
 ## Runtime identity parity
+
+Linux hosts that require host-level monitoring use the pinned node_exporter service and the private Prometheus target inventory described in [Linux Host Metrics Onboarding](../docs/16-linux-host-metrics-onboarding.md).
 
 The reference runtime intentionally uses shared ownership for OpenSearch and
 Dashboards (`opensearch:opensearch`), `dataprepper:dataprepper` for Data

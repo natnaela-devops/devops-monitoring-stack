@@ -35,6 +35,7 @@ Rendered contract:
   - OpenSearch Dashboards workspace/data-source/Explore feature configuration
   - Data Prepper trace 21890 + HTTP log 2021 + Prometheus service-map sink
   - Prometheus 30s scrape/evaluation configuration
+  - Prometheus alert rules; optional APM recording/reporting rules
   - Alertmanager Telegram routing/template configuration
   - process-exporter process grouping configuration
 
@@ -88,6 +89,8 @@ for var in "${required_vars[@]}"; do
 done
 
 [[ "$ALERTMANAGER_TELEGRAM_CHAT_ID" =~ ^-?[0-9]+$ ]] || die "ALERTMANAGER_TELEGRAM_CHAT_ID must be an integer"
+ENABLE_APM_RECORDING_RULES="${ENABLE_APM_RECORDING_RULES:-false}"
+[[ "$ENABLE_APM_RECORDING_RULES" =~ ^(true|false)$ ]] || die "ENABLE_APM_RECORDING_RULES must be true or false"
 [[ -s "$DASHBOARDS_SERVICE_PASSWORD_FILE" ]] || die "Dashboards password file missing/empty: $DASHBOARDS_SERVICE_PASSWORD_FILE"
 [[ -s "$OPENSEARCH_INGEST_PASSWORD_FILE" ]] || die "Data Prepper ingest password file missing/empty: $OPENSEARCH_INGEST_PASSWORD_FILE"
 
@@ -148,12 +151,14 @@ render_template "$REPO_ROOT/observability-host/dashboards/opensearch_dashboards.
 render_template "$REPO_ROOT/observability-host/data-prepper/data-prepper-config.yaml" "$OUTPUT_DIR/data-prepper/config/data-prepper-config.yaml"
 render_template "$REPO_ROOT/observability-host/data-prepper/pipelines.example.yaml" "$OUTPUT_DIR/data-prepper/pipelines/pipelines.yaml"
 render_template "$REPO_ROOT/observability-host/alertmanager/alertmanager.yml.example" "$OUTPUT_DIR/alertmanager/alertmanager.yml"
-install -m 0640 "$REPO_ROOT/observability-host/alertmanager/telegram.tmpl" "$OUTPUT_DIR/alertmanager/templates/observability-telegram.tmpl"
+install -m 0640 "$REPO_ROOT/observability-host/alertmanager/telegram.tmpl" "$OUTPUT_DIR/alertmanager/templates/telegram.tmpl"
 install -m 0640 "$REPO_ROOT/observability-host/process-exporter/process-exporter.yml" "$OUTPUT_DIR/process-exporter/process-exporter.yml"
 
 render_template "$REPO_ROOT/prometheus/rules/infrastructure-alerts.yml.example" "$OUTPUT_DIR/prometheus/rules/infrastructure-alerts.yml"
 render_template "$REPO_ROOT/prometheus/rules/application-alerts.yml.example" "$OUTPUT_DIR/prometheus/rules/application-alerts.yml"
+render_template "$REPO_ROOT/prometheus/rules/platform-alerts.yml.example" "$OUTPUT_DIR/prometheus/rules/platform-alerts.yml"
 
+if [[ "$ENABLE_APM_RECORDING_RULES" == "true" ]]; then
 python3 - "$REPO_ROOT/prometheus/rules/opensearch-apm-red.yml" "$OUTPUT_DIR/prometheus/rules/opensearch-apm-red.yml" <<'PY'
 import os, sys
 src, dst = sys.argv[1:3]
@@ -163,6 +168,7 @@ open(dst, "w", encoding="utf-8").write(text)
 PY
 
 install -m 0640 "$REPO_ROOT/prometheus/rules/opensearch-apm-report.yml" "$OUTPUT_DIR/prometheus/rules/opensearch-apm-report.yml"
+fi
 
 python3 - "$REPO_ROOT/observability-host/prometheus/prometheus.yml.example" "$TARGETS_FILE" "$OUTPUT_DIR/prometheus/prometheus.yml" <<'PY'
 import json, os, re, sys
@@ -237,8 +243,13 @@ chmod 0640 \
   "$OUTPUT_DIR/prometheus/prometheus.yml" \
   "$OUTPUT_DIR/prometheus/rules/infrastructure-alerts.yml" \
   "$OUTPUT_DIR/prometheus/rules/application-alerts.yml" \
-  "$OUTPUT_DIR/prometheus/rules/opensearch-apm-red.yml" \
-  "$OUTPUT_DIR/prometheus/rules/opensearch-apm-report.yml"
+  "$OUTPUT_DIR/prometheus/rules/platform-alerts.yml"
+
+if [[ "$ENABLE_APM_RECORDING_RULES" == "true" ]]; then
+  chmod 0640 \
+    "$OUTPUT_DIR/prometheus/rules/opensearch-apm-red.yml" \
+    "$OUTPUT_DIR/prometheus/rules/opensearch-apm-report.yml"
+fi
 
 bash "$REPO_ROOT/scripts/validate-rendered-reference-config.sh" "$OUTPUT_DIR"
 ok "Reference configuration rendered: $OUTPUT_DIR"

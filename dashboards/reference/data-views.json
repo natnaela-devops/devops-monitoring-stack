@@ -1,0 +1,64 @@
+{
+  "saved_objects": [
+    {
+      "type": "index-pattern",
+      "id": "std-logs-platform-dataset",
+      "attributes": {
+        "title": "logs-platform",
+        "displayName": "Kubernetes Platform Logs",
+        "description": "RKE2, Kubernetes, Rancher, Longhorn and observability platform logs; routine Fluent Bit success chatter hidden.",
+        "timeFieldName": "time",
+        "signalType": "logs",
+        "schemaMappings": "{\"otelLogs\":{\"traceId\":\"traceId\",\"spanId\":\"spanId\",\"serviceName\":\"serviceName\",\"timestamp\":\"time\"}}"
+      },
+      "references": [],
+      "migrationVersion": {
+        "index-pattern": "7.6.0"
+      }
+    },
+    {
+      "type": "index-pattern",
+      "id": "std-logs-application-dataset",
+      "attributes": {
+        "title": "logs-application",
+        "displayName": "Application Logs",
+        "description": "Application and deployment workload logs only.",
+        "timeFieldName": "time",
+        "signalType": "logs",
+        "schemaMappings": "{\"otelLogs\":{\"traceId\":\"traceId\",\"spanId\":\"spanId\",\"serviceName\":\"serviceName\",\"timestamp\":\"time\"}}"
+      },
+      "references": [],
+      "migrationVersion": {
+        "index-pattern": "7.6.0"
+      }
+    },
+    {
+      "type": "index-pattern",
+      "id": "std-apm-span-data-view",
+      "attributes": {
+        "title": "otel-v1-apm-span*",
+        "displayName": "APM Traces",
+        "timeFieldName": "endTime",
+        "signalType": "traces",
+        "schemaMappings": "{}"
+      },
+      "references": [],
+      "migrationVersion": {
+        "index-pattern": "7.6.0"
+      }
+    },
+    {
+      "type": "index-pattern",
+      "id": "std-apm-service-map-data-view",
+      "attributes": {
+        "title": "otel-v2-apm-service-map*",
+        "displayName": "APM Service Map",
+        "timeFieldName": "timestamp"
+      },
+      "references": [],
+      "migrationVersion": {
+        "index-pattern": "7.6.0"
+      }
+    }
+  ]
+}
