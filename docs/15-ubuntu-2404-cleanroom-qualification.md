@@ -66,7 +66,7 @@ The qualification also confirmed:
 - OpenSearch Dashboards reachable;
 - all configured Prometheus scrape targets UP;
 - 16 standardized alerting rules loaded;
-- 13 recording rules loaded;
+- 13 optional recording/reporting rules loaded for this qualification run;
 - zero unhealthy Prometheus rules;
 - no failed systemd units;
 - no OOM-killer activity during the soak;
