@@ -1,65 +1,99 @@
 {{ define "telegram.observability.message" -}}
-{{ if eq .Status "firing" -}}
-{{ if eq .CommonLabels.severity "critical" }}🚨 ALERT — CRITICAL{{ else if eq .CommonLabels.severity "warning" }}⚠️ ALERT — WARNING{{ else }}🚨 ALERT{{ end }}
+{{ $firing := .Alerts.Firing -}}
+{{ $resolved := .Alerts.Resolved -}}
+
+{{ if gt (len $firing) 0 -}}
+{{ if gt (len $resolved) 0 -}}
+🔄 ALERT UPDATE{{ if eq .CommonLabels.severity "critical" }} — CRITICAL{{ else if eq .CommonLabels.severity "warning" }} — WARNING{{ end }}
 {{ else -}}
-✅ RECOVERED
+{{ if eq .CommonLabels.severity "critical" }}🚨 ALERT — CRITICAL{{ else if eq .CommonLabels.severity "warning" }}⚠️ ALERT — WARNING{{ else }}🚨 ALERT{{ end }}
 {{ end }}
 
 Alert: {{ .CommonLabels.alertname }}
 {{ if .CommonLabels.environment }}Environment: {{ .CommonLabels.environment }}{{ end }}
 {{ if .CommonLabels.team }}Team: {{ .CommonLabels.team }}{{ end }}
+Affected Resources: {{ len $firing }}
 
-{{ range .Alerts -}}
-{{ if .Labels.service }}Service: {{ .Labels.service }}
+{{ range $firing -}}
+• {{ if .Labels.service }}Service: {{ .Labels.service }}{{ else if .Labels.node }}Node: {{ .Labels.node }}{{ else if .Labels.pod }}Pod: {{ .Labels.pod }}{{ else }}Resource{{ end }}
+{{ if and .Labels.service .Labels.node }}  Node: {{ .Labels.node }}
 {{ end -}}
-{{ if .Labels.node }}Node: {{ .Labels.node }}
+{{ if .Labels.ip }}  IP: {{ .Labels.ip }}
 {{ end -}}
-{{ if .Labels.ip }}IP: {{ .Labels.ip }}
+{{ if .Labels.namespace }}  Namespace: {{ .Labels.namespace }}
 {{ end -}}
-{{ if .Labels.namespace }}Namespace: {{ .Labels.namespace }}
+{{ if and .Labels.pod (not .Labels.service) }}  Pod: {{ .Labels.pod }}
 {{ end -}}
-{{ if .Labels.pod }}Pod: {{ .Labels.pod }}
+{{ if .Labels.container }}  Container: {{ .Labels.container }}
 {{ end -}}
-{{ if .Labels.container }}Container: {{ .Labels.container }}
+{{ if .Labels.mountpoint }}  Resource: {{ .Labels.mountpoint }}
 {{ end -}}
-{{ if .Labels.mountpoint }}Resource: {{ .Labels.mountpoint }}
-{{ end -}}
-{{ if eq $.Status "firing" -}}
-{{ if .Annotations.observed }}Observed: {{ .Annotations.observed }}
-{{ end -}}
-{{ if .Annotations.threshold }}Threshold: {{ .Annotations.threshold }}
+{{ if .Annotations.observed }}  Observed: {{ .Annotations.observed }}
 {{ end }}
+
+{{ end -}}
+
+{{ if .CommonAnnotations.threshold }}Threshold: {{ .CommonAnnotations.threshold }}
+
+{{ end -}}
+{{ if .CommonAnnotations.impact }}Impact:
+{{ .CommonAnnotations.impact }}
+
+{{ end -}}
+{{ if .CommonAnnotations.action }}Recommended Action:
+{{ .CommonAnnotations.action }}
+
+{{ end -}}
+
+{{ if gt (len $resolved) 0 -}}
+Recovered Since Last Notification: {{ len $resolved }}
+
+{{ range $resolved -}}
+• {{ if .Labels.service }}Service: {{ .Labels.service }}{{ else if .Labels.node }}Node: {{ .Labels.node }}{{ else if .Labels.pod }}Pod: {{ .Labels.pod }}{{ else }}Resource{{ end }}
+{{ if and .Labels.service .Labels.node }}  Node: {{ .Labels.node }}
+{{ end -}}
+{{ if .Labels.ip }}  IP: {{ .Labels.ip }}
+{{ end -}}
+{{ if .Labels.namespace }}  Namespace: {{ .Labels.namespace }}
+{{ end -}}
+{{ if .Labels.mountpoint }}  Resource: {{ .Labels.mountpoint }}
+{{ end }}
+
+{{ end -}}
+{{ end -}}
+
 Detected By: Prometheus
-{{ if .Labels.job }}Metric Source: {{ .Labels.job }}
+{{ if .CommonLabels.job }}Metric Source: {{ .CommonLabels.job }}
 {{ end -}}
 Notification By: Alertmanager
 
-{{ if .Annotations.summary }}Summary:
-{{ .Annotations.summary }}
-{{ end -}}
-{{ if .Annotations.description }}
-Description:
-{{ .Annotations.description }}
-{{ end -}}
-{{ if .Annotations.impact }}
-Impact:
-{{ .Annotations.impact }}
-{{ end -}}
-{{ if .Annotations.action }}
-Recommended Action:
-{{ .Annotations.action }}
-{{ end -}}
 {{ else -}}
-Detected By: Prometheus
-{{ if .Labels.job }}Metric Source: {{ .Labels.job }}
+✅ RECOVERED
+
+Alert: {{ .CommonLabels.alertname }}
+{{ if .CommonLabels.environment }}Environment: {{ .CommonLabels.environment }}{{ end }}
+{{ if .CommonLabels.team }}Team: {{ .CommonLabels.team }}{{ end }}
+Recovered Resources: {{ len $resolved }}
+
+{{ range $resolved -}}
+• {{ if .Labels.service }}Service: {{ .Labels.service }}{{ else if .Labels.node }}Node: {{ .Labels.node }}{{ else if .Labels.pod }}Pod: {{ .Labels.pod }}{{ else }}Resource{{ end }}
+{{ if and .Labels.service .Labels.node }}  Node: {{ .Labels.node }}
 {{ end -}}
-Notification By: Alertmanager
+{{ if .Labels.ip }}  IP: {{ .Labels.ip }}
+{{ end -}}
+{{ if .Labels.namespace }}  Namespace: {{ .Labels.namespace }}
+{{ end -}}
+{{ if .Labels.container }}  Container: {{ .Labels.container }}
+{{ end -}}
+{{ if .Labels.mountpoint }}  Resource: {{ .Labels.mountpoint }}
+{{ end }}
+
+{{ end -}}
 
 Recovery:
-{{ if .Annotations.recovery }}{{ .Annotations.recovery }}{{ else }}The monitored condition is no longer breaching its configured alert threshold.{{ end }}
+{{ if .CommonAnnotations.recovery }}{{ .CommonAnnotations.recovery }}{{ else }}Prometheus no longer reports the configured alert condition.{{ end }}
 
-Note:
-This confirms recovery of the monitored condition. Recovery may have been automatic or operator-driven.
-{{ end }}
+Detected By: Prometheus
+Notification By: Alertmanager
 {{ end -}}
 {{ end }}
