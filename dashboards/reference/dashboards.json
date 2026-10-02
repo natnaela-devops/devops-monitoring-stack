@@ -1,0 +1,528 @@
+{
+  "saved_objects": [
+    {
+      "type": "dashboard",
+      "id": "std-dashboard-deployment-workload-health",
+      "attributes": {
+        "title": "Deployment & Workload Health",
+        "hits": 0,
+        "description": "Standard application workload dashboard covering pod restarts, unavailable deployment replicas, CPU and memory usage, resource request and limit utilization, CPU throttling and workload network throughput.",
+        "panelsJSON": "[{\"version\":\"3.6.0\",\"panelIndex\":\"panel-deploy-restarts\",\"gridData\":{\"i\":\"panel-deploy-restarts\",\"x\":0,\"y\":0,\"w\":24,\"h\":10},\"panelRefName\":\"deploy-restarts\"},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-deploy-unavailable-replicas\",\"gridData\":{\"i\":\"panel-deploy-unavailable-replicas\",\"x\":24,\"y\":0,\"w\":24,\"h\":10},\"panelRefName\":\"deploy-unavailable-replicas\"},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-deploy-pod-cpu\",\"gridData\":{\"i\":\"panel-deploy-pod-cpu\",\"x\":0,\"y\":10,\"w\":24,\"h\":10},\"panelRefName\":\"deploy-pod-cpu\"},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-deploy-pod-memory\",\"gridData\":{\"i\":\"panel-deploy-pod-memory\",\"x\":24,\"y\":10,\"w\":24,\"h\":10},\"panelRefName\":\"deploy-pod-memory\"},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-deploy-cpu-vs-request\",\"gridData\":{\"i\":\"panel-deploy-cpu-vs-request\",\"x\":0,\"y\":20,\"w\":24,\"h\":10},\"panelRefName\":\"deploy-cpu-vs-request\"},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-deploy-cpu-vs-limit\",\"gridData\":{\"i\":\"panel-deploy-cpu-vs-limit\",\"x\":24,\"y\":20,\"w\":24,\"h\":10},\"panelRefName\":\"deploy-cpu-vs-limit\"},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-deploy-memory-vs-request\",\"gridData\":{\"i\":\"panel-deploy-memory-vs-request\",\"x\":0,\"y\":30,\"w\":24,\"h\":10},\"panelRefName\":\"deploy-memory-vs-request\"},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-deploy-memory-vs-limit\",\"gridData\":{\"i\":\"panel-deploy-memory-vs-limit\",\"x\":24,\"y\":30,\"w\":24,\"h\":10},\"panelRefName\":\"deploy-memory-vs-limit\"},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-deploy-cpu-throttling\",\"gridData\":{\"i\":\"panel-deploy-cpu-throttling\",\"x\":0,\"y\":40,\"w\":48,\"h\":10},\"panelRefName\":\"deploy-cpu-throttling\"},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-deploy-network-rx\",\"gridData\":{\"i\":\"panel-deploy-network-rx\",\"x\":0,\"y\":50,\"w\":24,\"h\":10},\"panelRefName\":\"deploy-network-rx\"},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-deploy-network-tx\",\"gridData\":{\"i\":\"panel-deploy-network-tx\",\"x\":24,\"y\":50,\"w\":24,\"h\":10},\"panelRefName\":\"deploy-network-tx\"}]",
+        "optionsJSON": "{\"useMargins\":true,\"hidePanelTitles\":false}",
+        "timeRestore": false,
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{}"
+        }
+      },
+      "references": [
+        {
+          "name": "deploy-restarts",
+          "id": "std-deploy-restarts",
+          "type": "explore"
+        },
+        {
+          "name": "deploy-unavailable-replicas",
+          "id": "std-deploy-unavailable-replicas",
+          "type": "explore"
+        },
+        {
+          "name": "deploy-pod-cpu",
+          "id": "std-deploy-pod-cpu",
+          "type": "explore"
+        },
+        {
+          "name": "deploy-pod-memory",
+          "id": "std-deploy-pod-memory",
+          "type": "explore"
+        },
+        {
+          "name": "deploy-cpu-vs-request",
+          "id": "std-deploy-cpu-vs-request",
+          "type": "explore"
+        },
+        {
+          "name": "deploy-cpu-vs-limit",
+          "id": "std-deploy-cpu-vs-limit",
+          "type": "explore"
+        },
+        {
+          "name": "deploy-memory-vs-request",
+          "id": "std-deploy-memory-vs-request",
+          "type": "explore"
+        },
+        {
+          "name": "deploy-memory-vs-limit",
+          "id": "std-deploy-memory-vs-limit",
+          "type": "explore"
+        },
+        {
+          "name": "deploy-cpu-throttling",
+          "id": "std-deploy-cpu-throttling",
+          "type": "explore"
+        },
+        {
+          "name": "deploy-network-rx",
+          "id": "std-deploy-network-rx",
+          "type": "explore"
+        },
+        {
+          "name": "deploy-network-tx",
+          "id": "std-deploy-network-tx",
+          "type": "explore"
+        }
+      ],
+      "migrationVersion": {
+        "dashboard": "7.9.3"
+      }
+    },
+    {
+      "type": "dashboard",
+      "id": "std-dashboard-application-performance",
+      "attributes": {
+        "title": "Application Performance",
+        "hits": 0,
+        "description": "Standard application performance dashboard covering request traffic, 4xx and 5xx rates, server-side request availability, service latency percentiles and dependency P99 latency.",
+        "panelsJSON": "[{\"version\":\"3.6.0\",\"panelIndex\":\"panel-app-traffic\",\"gridData\":{\"i\":\"panel-app-traffic\",\"x\":0,\"y\":0,\"w\":24,\"h\":9},\"panelRefName\":\"app-traffic\"},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-app-4xx-rate\",\"gridData\":{\"i\":\"panel-app-4xx-rate\",\"x\":24,\"y\":0,\"w\":24,\"h\":9},\"panelRefName\":\"app-4xx-rate\"},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-app-5xx-rate\",\"gridData\":{\"i\":\"panel-app-5xx-rate\",\"x\":0,\"y\":9,\"w\":24,\"h\":9},\"panelRefName\":\"app-5xx-rate\"},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-app-request-availability\",\"gridData\":{\"i\":\"panel-app-request-availability\",\"x\":24,\"y\":9,\"w\":24,\"h\":9},\"panelRefName\":\"app-request-availability\"},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-app-p50-latency\",\"gridData\":{\"i\":\"panel-app-p50-latency\",\"x\":0,\"y\":18,\"w\":24,\"h\":9},\"panelRefName\":\"app-p50-latency\"},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-app-p90-latency\",\"gridData\":{\"i\":\"panel-app-p90-latency\",\"x\":24,\"y\":18,\"w\":24,\"h\":9},\"panelRefName\":\"app-p90-latency\"},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-app-p99-latency\",\"gridData\":{\"i\":\"panel-app-p99-latency\",\"x\":0,\"y\":27,\"w\":24,\"h\":9},\"panelRefName\":\"app-p99-latency\"},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-app-dependency-p99\",\"gridData\":{\"i\":\"panel-app-dependency-p99\",\"x\":24,\"y\":27,\"w\":24,\"h\":9},\"panelRefName\":\"app-dependency-p99\"}]",
+        "optionsJSON": "{\"useMargins\":true,\"hidePanelTitles\":false}",
+        "timeRestore": false,
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{}"
+        }
+      },
+      "references": [
+        {
+          "name": "app-traffic",
+          "id": "std-app-traffic",
+          "type": "explore"
+        },
+        {
+          "name": "app-4xx-rate",
+          "id": "std-app-4xx-rate",
+          "type": "explore"
+        },
+        {
+          "name": "app-5xx-rate",
+          "id": "std-app-5xx-rate",
+          "type": "explore"
+        },
+        {
+          "name": "app-request-availability",
+          "id": "std-app-request-availability",
+          "type": "explore"
+        },
+        {
+          "name": "app-p50-latency",
+          "id": "std-app-p50-latency",
+          "type": "explore"
+        },
+        {
+          "name": "app-p90-latency",
+          "id": "std-app-p90-latency",
+          "type": "explore"
+        },
+        {
+          "name": "app-p99-latency",
+          "id": "std-app-p99-latency",
+          "type": "explore"
+        },
+        {
+          "name": "app-dependency-p99",
+          "id": "std-app-dependency-p99",
+          "type": "explore"
+        }
+      ],
+      "migrationVersion": {
+        "dashboard": "7.9.3"
+      }
+    },
+    {
+      "type": "dashboard",
+      "id": "std-dashboard-developer-investigation",
+      "attributes": {
+        "title": "Developer Investigation",
+        "description": "Developer investigation workspace for HTTP server spans and correlated application logs. Use service, route, status, Trace ID and Span ID to move from an application symptom to the corresponding request and log evidence.",
+        "hits": 0,
+        "panelsJSON": "[{\"version\":\"3.6.0\",\"panelIndex\":\"panel-dev_panel_http\",\"gridData\":{\"i\":\"panel-dev_panel_http\",\"x\":0,\"y\":0,\"w\":48,\"h\":18},\"panelRefName\":\"dev_panel_http\"},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-dev_panel_logs\",\"gridData\":{\"i\":\"panel-dev_panel_logs\",\"x\":0,\"y\":18,\"w\":48,\"h\":24},\"panelRefName\":\"dev_panel_logs\"}]",
+        "optionsJSON": "{\"useMargins\":true,\"hidePanelTitles\":false}",
+        "timeRestore": true,
+        "timeFrom": "now-15m",
+        "timeTo": "now",
+        "refreshInterval": {
+          "pause": true,
+          "value": 0
+        },
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"query\":{\"query\":\"\",\"language\":\"kuery\"},\"filter\":[]}"
+        }
+      },
+      "references": [
+        {
+          "name": "dev_panel_http",
+          "id": "std-dev-http-routes-requests",
+          "type": "search"
+        },
+        {
+          "name": "dev_panel_logs",
+          "id": "std-logs-application",
+          "type": "search"
+        }
+      ],
+      "migrationVersion": {
+        "dashboard": "7.9.3"
+      }
+    },
+    {
+      "type": "dashboard",
+      "id": "std-dashboard-realtime-channel-performance",
+      "attributes": {
+        "title": "Real-Time Channel Performance",
+        "hits": 0,
+        "description": "Real-time side-by-side performance for standardized USSD and Mobile channels, covering per-service P99 latency trends, current/peak/best P99, current request volume and facade/gateway deployment health.",
+        "panelsJSON": "[{\"version\":\"3.6.0\",\"gridData\":{\"x\":0,\"y\":23,\"w\":6,\"h\":8,\"i\":\"panel-channel-ussd-current-p99\"},\"panelIndex\":\"panel-channel-ussd-current-p99\",\"embeddableConfig\":{},\"panelRefName\":\"channel-ussd-current-p99\"},{\"version\":\"3.6.0\",\"gridData\":{\"x\":6,\"y\":23,\"w\":6,\"h\":8,\"i\":\"panel-channel-ussd-peak-p99\"},\"panelIndex\":\"panel-channel-ussd-peak-p99\",\"embeddableConfig\":{},\"panelRefName\":\"channel-ussd-peak-p99\"},{\"version\":\"3.6.0\",\"gridData\":{\"x\":12,\"y\":23,\"w\":6,\"h\":8,\"i\":\"panel-channel-ussd-best-p99\"},\"panelIndex\":\"panel-channel-ussd-best-p99\",\"embeddableConfig\":{},\"panelRefName\":\"channel-ussd-best-p99\"},{\"version\":\"3.6.0\",\"gridData\":{\"x\":18,\"y\":23,\"w\":6,\"h\":8,\"i\":\"panel-channel-ussd-current-requests\"},\"panelIndex\":\"panel-channel-ussd-current-requests\",\"embeddableConfig\":{},\"panelRefName\":\"channel-ussd-current-requests\"},{\"version\":\"3.6.0\",\"gridData\":{\"x\":24,\"y\":23,\"w\":6,\"h\":8,\"i\":\"panel-channel-mobile-current-p99\"},\"panelIndex\":\"panel-channel-mobile-current-p99\",\"embeddableConfig\":{},\"panelRefName\":\"channel-mobile-current-p99\"},{\"version\":\"3.6.0\",\"gridData\":{\"x\":30,\"y\":23,\"w\":6,\"h\":8,\"i\":\"panel-channel-mobile-peak-p99\"},\"panelIndex\":\"panel-channel-mobile-peak-p99\",\"embeddableConfig\":{},\"panelRefName\":\"channel-mobile-peak-p99\"},{\"version\":\"3.6.0\",\"gridData\":{\"x\":36,\"y\":23,\"w\":6,\"h\":8,\"i\":\"panel-channel-mobile-best-p99\"},\"panelIndex\":\"panel-channel-mobile-best-p99\",\"embeddableConfig\":{},\"panelRefName\":\"channel-mobile-best-p99\"},{\"version\":\"3.6.0\",\"gridData\":{\"x\":42,\"y\":23,\"w\":6,\"h\":8,\"i\":\"panel-channel-mobile-current-requests\"},\"panelIndex\":\"panel-channel-mobile-current-requests\",\"embeddableConfig\":{},\"panelRefName\":\"channel-mobile-current-requests\"},{\"version\":\"3.6.0\",\"gridData\":{\"x\":0,\"y\":31,\"w\":24,\"h\":2,\"i\":\"panel-channel-ussd-entry-health\"},\"panelIndex\":\"panel-channel-ussd-entry-health\",\"embeddableConfig\":{},\"panelRefName\":\"channel-ussd-entry-health\"},{\"version\":\"3.6.0\",\"gridData\":{\"x\":24,\"y\":31,\"w\":24,\"h\":2,\"i\":\"panel-channel-mobile-entry-health\"},\"panelIndex\":\"panel-channel-mobile-entry-health\",\"embeddableConfig\":{},\"panelRefName\":\"channel-mobile-entry-health\"},{\"version\":\"3.6.0\",\"gridData\":{\"x\":0,\"y\":0,\"w\":24,\"h\":23,\"i\":\"panel-channel-ussd-p99-latency\"},\"panelIndex\":\"panel-channel-ussd-p99-latency\",\"embeddableConfig\":{},\"panelRefName\":\"channel-ussd-p99-latency\"},{\"version\":\"3.6.0\",\"gridData\":{\"x\":24,\"y\":0,\"w\":24,\"h\":23,\"i\":\"panel-channel-mobile-p99-latency\"},\"panelIndex\":\"panel-channel-mobile-p99-latency\",\"embeddableConfig\":{},\"panelRefName\":\"channel-mobile-p99-latency\"}]",
+        "optionsJSON": "{\"hidePanelTitles\":false,\"useMargins\":true}",
+        "timeRestore": true,
+        "timeTo": "now",
+        "timeFrom": "now-15m",
+        "refreshInterval": {
+          "pause": false,
+          "value": 30000
+        },
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"query\":{\"language\":\"kuery\",\"query\":\"\"},\"filter\":[]}"
+        }
+      },
+      "references": [
+        {
+          "name": "channel-ussd-current-p99",
+          "id": "std-channel-ussd-current-p99",
+          "type": "explore"
+        },
+        {
+          "name": "channel-ussd-peak-p99",
+          "id": "std-channel-ussd-peak-p99",
+          "type": "explore"
+        },
+        {
+          "name": "channel-ussd-best-p99",
+          "id": "std-channel-ussd-best-p99",
+          "type": "explore"
+        },
+        {
+          "name": "channel-ussd-current-requests",
+          "id": "std-channel-ussd-current-requests",
+          "type": "explore"
+        },
+        {
+          "name": "channel-mobile-current-p99",
+          "id": "std-channel-mobile-current-p99",
+          "type": "explore"
+        },
+        {
+          "name": "channel-mobile-peak-p99",
+          "id": "std-channel-mobile-peak-p99",
+          "type": "explore"
+        },
+        {
+          "name": "channel-mobile-best-p99",
+          "id": "std-channel-mobile-best-p99",
+          "type": "explore"
+        },
+        {
+          "name": "channel-mobile-current-requests",
+          "id": "std-channel-mobile-current-requests",
+          "type": "explore"
+        },
+        {
+          "name": "channel-ussd-entry-health",
+          "id": "std-channel-ussd-entry-health",
+          "type": "explore"
+        },
+        {
+          "name": "channel-mobile-entry-health",
+          "id": "std-channel-mobile-entry-health",
+          "type": "explore"
+        },
+        {
+          "name": "channel-ussd-p99-latency",
+          "id": "std-channel-ussd-p99-latency",
+          "type": "explore"
+        },
+        {
+          "name": "channel-mobile-p99-latency",
+          "id": "std-channel-mobile-p99-latency",
+          "type": "explore"
+        }
+      ],
+      "migrationVersion": {
+        "dashboard": "7.9.3"
+      }
+    },
+    {
+      "type": "dashboard",
+      "id": "std-dashboard-infrastructure-health",
+      "attributes": {
+        "title": "Infrastructure Health",
+        "description": "Infrastructure capacity and resource-pressure dashboard showing live per-host CPU, memory and filesystem utilization alongside provisioned capacity and available memory, followed by historical CPU, memory, filesystem and physical disk I/O trends.",
+        "hits": 0,
+        "panelsJSON": "[{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-host-01-cpu\",\"gridData\":{\"x\":0,\"y\":0,\"w\":12,\"h\":6,\"i\":\"panel-infra-host-01-cpu\"},\"panelRefName\":\"infra-host-01-cpu\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-host-01-memory\",\"gridData\":{\"x\":0,\"y\":12,\"w\":12,\"h\":6,\"i\":\"panel-infra-host-01-memory\"},\"panelRefName\":\"infra-host-01-memory\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-host-01-memory-available\",\"gridData\":{\"x\":0,\"y\":24,\"w\":12,\"h\":6,\"i\":\"panel-infra-host-01-memory-available\"},\"panelRefName\":\"infra-host-01-memory-available\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-host-01-filesystem-max\",\"gridData\":{\"x\":0,\"y\":30,\"w\":12,\"h\":6,\"i\":\"panel-infra-host-01-filesystem-max\"},\"panelRefName\":\"infra-host-01-filesystem-max\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-host-02-cpu\",\"gridData\":{\"x\":12,\"y\":0,\"w\":12,\"h\":6,\"i\":\"panel-infra-host-02-cpu\"},\"panelRefName\":\"infra-host-02-cpu\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-host-02-memory\",\"gridData\":{\"x\":12,\"y\":12,\"w\":12,\"h\":6,\"i\":\"panel-infra-host-02-memory\"},\"panelRefName\":\"infra-host-02-memory\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-host-02-memory-available\",\"gridData\":{\"x\":12,\"y\":24,\"w\":12,\"h\":6,\"i\":\"panel-infra-host-02-memory-available\"},\"panelRefName\":\"infra-host-02-memory-available\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-host-02-filesystem-max\",\"gridData\":{\"x\":12,\"y\":30,\"w\":12,\"h\":6,\"i\":\"panel-infra-host-02-filesystem-max\"},\"panelRefName\":\"infra-host-02-filesystem-max\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-host-03-cpu\",\"gridData\":{\"x\":24,\"y\":0,\"w\":12,\"h\":6,\"i\":\"panel-infra-host-03-cpu\"},\"panelRefName\":\"infra-host-03-cpu\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-host-03-memory\",\"gridData\":{\"x\":24,\"y\":12,\"w\":12,\"h\":6,\"i\":\"panel-infra-host-03-memory\"},\"panelRefName\":\"infra-host-03-memory\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-host-03-memory-available\",\"gridData\":{\"x\":24,\"y\":24,\"w\":12,\"h\":6,\"i\":\"panel-infra-host-03-memory-available\"},\"panelRefName\":\"infra-host-03-memory-available\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-host-03-filesystem-max\",\"gridData\":{\"x\":24,\"y\":30,\"w\":12,\"h\":6,\"i\":\"panel-infra-host-03-filesystem-max\"},\"panelRefName\":\"infra-host-03-filesystem-max\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-observability-host-01-cpu\",\"gridData\":{\"x\":36,\"y\":0,\"w\":12,\"h\":6,\"i\":\"panel-infra-observability-host-01-cpu\"},\"panelRefName\":\"infra-observability-host-01-cpu\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-observability-host-01-memory\",\"gridData\":{\"x\":36,\"y\":12,\"w\":12,\"h\":6,\"i\":\"panel-infra-observability-host-01-memory\"},\"panelRefName\":\"infra-observability-host-01-memory\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-observability-host-01-memory-available\",\"gridData\":{\"x\":36,\"y\":24,\"w\":12,\"h\":6,\"i\":\"panel-infra-observability-host-01-memory-available\"},\"panelRefName\":\"infra-observability-host-01-memory-available\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-observability-host-01-filesystem-max\",\"gridData\":{\"x\":36,\"y\":30,\"w\":12,\"h\":6,\"i\":\"panel-infra-observability-host-01-filesystem-max\"},\"panelRefName\":\"infra-observability-host-01-filesystem-max\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-node-cpu-trend\",\"gridData\":{\"x\":0,\"y\":42,\"w\":24,\"h\":10,\"i\":\"panel-infra-node-cpu-trend\"},\"panelRefName\":\"infra-node-cpu-trend\"},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-disk-io\",\"gridData\":{\"x\":24,\"y\":52,\"w\":24,\"h\":10,\"i\":\"panel-infra-disk-io\"},\"panelRefName\":\"infra-disk-io\"},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-filesystem-usage\",\"gridData\":{\"x\":0,\"y\":52,\"w\":24,\"h\":10,\"i\":\"panel-infra-filesystem-usage\"},\"panelRefName\":\"infra-filesystem-usage\"},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-host-01-cpu-capacity\",\"gridData\":{\"x\":0,\"y\":6,\"w\":12,\"h\":6,\"i\":\"panel-infra-host-01-cpu-capacity\"},\"panelRefName\":\"infra-host-01-cpu-capacity\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-host-01-ram-total\",\"gridData\":{\"x\":0,\"y\":18,\"w\":12,\"h\":6,\"i\":\"panel-infra-host-01-ram-total\"},\"panelRefName\":\"infra-host-01-ram-total\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-host-01-disk-capacity\",\"gridData\":{\"x\":0,\"y\":36,\"w\":12,\"h\":6,\"i\":\"panel-infra-host-01-disk-capacity\"},\"panelRefName\":\"infra-host-01-disk-capacity\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-host-02-cpu-capacity\",\"gridData\":{\"x\":12,\"y\":6,\"w\":12,\"h\":6,\"i\":\"panel-infra-host-02-cpu-capacity\"},\"panelRefName\":\"infra-host-02-cpu-capacity\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-host-02-ram-total\",\"gridData\":{\"x\":12,\"y\":18,\"w\":12,\"h\":6,\"i\":\"panel-infra-host-02-ram-total\"},\"panelRefName\":\"infra-host-02-ram-total\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-host-02-disk-capacity\",\"gridData\":{\"x\":12,\"y\":36,\"w\":12,\"h\":6,\"i\":\"panel-infra-host-02-disk-capacity\"},\"panelRefName\":\"infra-host-02-disk-capacity\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-host-03-cpu-capacity\",\"gridData\":{\"x\":24,\"y\":6,\"w\":12,\"h\":6,\"i\":\"panel-infra-host-03-cpu-capacity\"},\"panelRefName\":\"infra-host-03-cpu-capacity\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-host-03-ram-total\",\"gridData\":{\"x\":24,\"y\":18,\"w\":12,\"h\":6,\"i\":\"panel-infra-host-03-ram-total\"},\"panelRefName\":\"infra-host-03-ram-total\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-host-03-disk-capacity\",\"gridData\":{\"x\":24,\"y\":36,\"w\":12,\"h\":6,\"i\":\"panel-infra-host-03-disk-capacity\"},\"panelRefName\":\"infra-host-03-disk-capacity\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-observability-host-01-cpu-capacity\",\"gridData\":{\"x\":36,\"y\":6,\"w\":12,\"h\":6,\"i\":\"panel-infra-observability-host-01-cpu-capacity\"},\"panelRefName\":\"infra-observability-host-01-cpu-capacity\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-observability-host-01-ram-total\",\"gridData\":{\"x\":36,\"y\":18,\"w\":12,\"h\":6,\"i\":\"panel-infra-observability-host-01-ram-total\"},\"panelRefName\":\"infra-observability-host-01-ram-total\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-observability-host-01-disk-capacity\",\"gridData\":{\"x\":36,\"y\":36,\"w\":12,\"h\":6,\"i\":\"panel-infra-observability-host-01-disk-capacity\"},\"panelRefName\":\"infra-observability-host-01-disk-capacity\",\"embeddableConfig\":{}},{\"version\":\"3.6.0\",\"panelIndex\":\"panel-infra-node-memory-trend\",\"gridData\":{\"x\":24,\"y\":42,\"w\":24,\"h\":10,\"i\":\"panel-infra-node-memory-trend\"},\"panelRefName\":\"infra-node-memory-trend\",\"embeddableConfig\":{}}]",
+        "optionsJSON": "{\"useMargins\":true,\"hidePanelTitles\":false}",
+        "timeRestore": true,
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"query\":{\"query\":\"\",\"language\":\"kuery\"},\"filter\":[]}"
+        },
+        "timeFrom": "now-1h",
+        "timeTo": "now",
+        "refreshInterval": {
+          "pause": false,
+          "value": 30000
+        }
+      },
+      "references": [
+        {
+          "name": "infra-filesystem-usage",
+          "id": "std-infra-filesystem-usage",
+          "type": "explore"
+        },
+        {
+          "name": "infra-node-cpu-trend",
+          "id": "std-infra-node-cpu-trend",
+          "type": "explore"
+        },
+        {
+          "name": "infra-disk-io",
+          "id": "std-infra-disk-io",
+          "type": "explore"
+        },
+        {
+          "name": "infra-host-01-cpu",
+          "id": "std-infra-host-01-cpu",
+          "type": "explore"
+        },
+        {
+          "name": "infra-host-01-memory",
+          "id": "std-infra-host-01-memory",
+          "type": "explore"
+        },
+        {
+          "name": "infra-host-01-memory-available",
+          "id": "std-infra-host-01-memory-available",
+          "type": "explore"
+        },
+        {
+          "name": "infra-host-01-filesystem-max",
+          "id": "std-infra-host-01-filesystem-max",
+          "type": "explore"
+        },
+        {
+          "name": "infra-host-02-cpu",
+          "id": "std-infra-host-02-cpu",
+          "type": "explore"
+        },
+        {
+          "name": "infra-host-02-memory",
+          "id": "std-infra-host-02-memory",
+          "type": "explore"
+        },
+        {
+          "name": "infra-host-02-memory-available",
+          "id": "std-infra-host-02-memory-available",
+          "type": "explore"
+        },
+        {
+          "name": "infra-host-02-filesystem-max",
+          "id": "std-infra-host-02-filesystem-max",
+          "type": "explore"
+        },
+        {
+          "name": "infra-host-03-cpu",
+          "id": "std-infra-host-03-cpu",
+          "type": "explore"
+        },
+        {
+          "name": "infra-host-03-memory",
+          "id": "std-infra-host-03-memory",
+          "type": "explore"
+        },
+        {
+          "name": "infra-host-03-memory-available",
+          "id": "std-infra-host-03-memory-available",
+          "type": "explore"
+        },
+        {
+          "name": "infra-host-03-filesystem-max",
+          "id": "std-infra-host-03-filesystem-max",
+          "type": "explore"
+        },
+        {
+          "name": "infra-observability-host-01-cpu",
+          "id": "std-infra-observability-host-01-cpu",
+          "type": "explore"
+        },
+        {
+          "name": "infra-observability-host-01-memory",
+          "id": "std-infra-observability-host-01-memory",
+          "type": "explore"
+        },
+        {
+          "name": "infra-observability-host-01-memory-available",
+          "id": "std-infra-observability-host-01-memory-available",
+          "type": "explore"
+        },
+        {
+          "name": "infra-observability-host-01-filesystem-max",
+          "id": "std-infra-observability-host-01-filesystem-max",
+          "type": "explore"
+        },
+        {
+          "name": "infra-host-01-cpu-capacity",
+          "id": "std-infra-host-01-cpu-capacity",
+          "type": "explore"
+        },
+        {
+          "name": "infra-host-01-ram-total",
+          "id": "std-infra-host-01-ram-total",
+          "type": "explore"
+        },
+        {
+          "name": "infra-host-01-disk-capacity",
+          "id": "std-infra-host-01-disk-capacity",
+          "type": "explore"
+        },
+        {
+          "name": "infra-host-02-cpu-capacity",
+          "id": "std-infra-host-02-cpu-capacity",
+          "type": "explore"
+        },
+        {
+          "name": "infra-host-02-ram-total",
+          "id": "std-infra-host-02-ram-total",
+          "type": "explore"
+        },
+        {
+          "name": "infra-host-02-disk-capacity",
+          "id": "std-infra-host-02-disk-capacity",
+          "type": "explore"
+        },
+        {
+          "name": "infra-host-03-cpu-capacity",
+          "id": "std-infra-host-03-cpu-capacity",
+          "type": "explore"
+        },
+        {
+          "name": "infra-host-03-ram-total",
+          "id": "std-infra-host-03-ram-total",
+          "type": "explore"
+        },
+        {
+          "name": "infra-host-03-disk-capacity",
+          "id": "std-infra-host-03-disk-capacity",
+          "type": "explore"
+        },
+        {
+          "name": "infra-observability-host-01-cpu-capacity",
+          "id": "std-infra-observability-host-01-cpu-capacity",
+          "type": "explore"
+        },
+        {
+          "name": "infra-observability-host-01-ram-total",
+          "id": "std-infra-observability-host-01-ram-total",
+          "type": "explore"
+        },
+        {
+          "name": "infra-observability-host-01-disk-capacity",
+          "id": "std-infra-observability-host-01-disk-capacity",
+          "type": "explore"
+        },
+        {
+          "name": "infra-node-memory-trend",
+          "id": "std-infra-node-memory-trend",
+          "type": "explore"
+        }
+      ],
+      "migrationVersion": {
+        "dashboard": "7.9.3"
+      }
+    },
+    {
+      "type": "dashboard",
+      "id": "std-dashboard-kubernetes-platform-health",
+      "attributes": {
+        "title": "Kubernetes Platform Health",
+        "hits": 0,
+        "description": "Kubernetes platform overview styled after the OpenSearch Kubernetes integration dashboard while using the environment's existing Prometheus, kube-state-metrics, Node Exporter and cAdvisor telemetry.",
+        "panelsJSON": "[{\"version\":\"3.6.0\",\"gridData\":{\"x\":0,\"y\":0,\"w\":9,\"h\":10,\"i\":\"panel-k8s-overview-nodes\"},\"panelIndex\":\"panel-k8s-overview-nodes\",\"embeddableConfig\":{},\"panelRefName\":\"k8s-overview-nodes\"},{\"version\":\"3.6.0\",\"gridData\":{\"x\":9,\"y\":0,\"w\":15,\"h\":10,\"i\":\"panel-k8s-overview-deployments\"},\"panelIndex\":\"panel-k8s-overview-deployments\",\"embeddableConfig\":{},\"panelRefName\":\"k8s-overview-deployments\"},{\"version\":\"3.6.0\",\"gridData\":{\"x\":24,\"y\":0,\"w\":24,\"h\":10,\"i\":\"panel-k8s-overview-available-by-deployment\"},\"panelIndex\":\"panel-k8s-overview-available-by-deployment\",\"embeddableConfig\":{},\"panelRefName\":\"k8s-overview-available-by-deployment\"},{\"version\":\"3.6.0\",\"gridData\":{\"x\":0,\"y\":10,\"w\":8,\"h\":10,\"i\":\"panel-k8s-overview-desired-pods\"},\"panelIndex\":\"panel-k8s-overview-desired-pods\",\"embeddableConfig\":{},\"panelRefName\":\"k8s-overview-desired-pods\"},{\"version\":\"3.6.0\",\"gridData\":{\"x\":8,\"y\":10,\"w\":8,\"h\":10,\"i\":\"panel-k8s-overview-available-pods\"},\"panelIndex\":\"panel-k8s-overview-available-pods\",\"embeddableConfig\":{},\"panelRefName\":\"k8s-overview-available-pods\"},{\"version\":\"3.6.0\",\"gridData\":{\"x\":16,\"y\":10,\"w\":8,\"h\":10,\"i\":\"panel-k8s-overview-unavailable-pods\"},\"panelIndex\":\"panel-k8s-overview-unavailable-pods\",\"embeddableConfig\":{},\"panelRefName\":\"k8s-overview-unavailable-pods\"},{\"version\":\"3.6.0\",\"gridData\":{\"x\":24,\"y\":10,\"w\":24,\"h\":10,\"i\":\"panel-k8s-overview-unavailable-by-deployment\"},\"panelIndex\":\"panel-k8s-overview-unavailable-by-deployment\",\"embeddableConfig\":{},\"panelRefName\":\"k8s-overview-unavailable-by-deployment\"},{\"version\":\"3.6.0\",\"gridData\":{\"x\":0,\"y\":20,\"w\":24,\"h\":12,\"i\":\"panel-k8s-overview-cpu-by-node\"},\"panelIndex\":\"panel-k8s-overview-cpu-by-node\",\"embeddableConfig\":{},\"panelRefName\":\"k8s-overview-cpu-by-node\"},{\"version\":\"3.6.0\",\"gridData\":{\"x\":24,\"y\":20,\"w\":24,\"h\":12,\"i\":\"panel-k8s-overview-memory-by-node\"},\"panelIndex\":\"panel-k8s-overview-memory-by-node\",\"embeddableConfig\":{},\"panelRefName\":\"k8s-overview-memory-by-node\"},{\"version\":\"3.6.0\",\"gridData\":{\"x\":0,\"y\":32,\"w\":24,\"h\":12,\"i\":\"panel-k8s-overview-top-memory\"},\"panelIndex\":\"panel-k8s-overview-top-memory\",\"embeddableConfig\":{},\"panelRefName\":\"k8s-overview-top-memory\"},{\"version\":\"3.6.0\",\"gridData\":{\"x\":24,\"y\":32,\"w\":24,\"h\":12,\"i\":\"panel-k8s-overview-top-cpu\"},\"panelIndex\":\"panel-k8s-overview-top-cpu\",\"embeddableConfig\":{},\"panelRefName\":\"k8s-overview-top-cpu\"}]",
+        "optionsJSON": "{\"useMargins\":true,\"hidePanelTitles\":false}",
+        "timeRestore": true,
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"query\":{\"query\":\"\",\"language\":\"kuery\"},\"filter\":[]}"
+        },
+        "timeFrom": "now-30m",
+        "timeTo": "now",
+        "refreshInterval": {
+          "pause": false,
+          "value": 30000
+        }
+      },
+      "references": [
+        {
+          "name": "k8s-overview-nodes",
+          "type": "explore",
+          "id": "std-k8s-overview-nodes"
+        },
+        {
+          "name": "k8s-overview-deployments",
+          "type": "explore",
+          "id": "std-k8s-overview-deployments"
+        },
+        {
+          "name": "k8s-overview-available-by-deployment",
+          "type": "explore",
+          "id": "std-k8s-overview-available-by-deployment"
+        },
+        {
+          "name": "k8s-overview-desired-pods",
+          "type": "explore",
+          "id": "std-k8s-overview-desired-pods"
+        },
+        {
+          "name": "k8s-overview-available-pods",
+          "type": "explore",
+          "id": "std-k8s-overview-available-pods"
+        },
+        {
+          "name": "k8s-overview-unavailable-pods",
+          "type": "explore",
+          "id": "std-k8s-overview-unavailable-pods"
+        },
+        {
+          "name": "k8s-overview-unavailable-by-deployment",
+          "type": "explore",
+          "id": "std-k8s-overview-unavailable-by-deployment"
+        },
+        {
+          "name": "k8s-overview-cpu-by-node",
+          "type": "explore",
+          "id": "std-k8s-overview-cpu-by-node"
+        },
+        {
+          "name": "k8s-overview-memory-by-node",
+          "type": "explore",
+          "id": "std-k8s-overview-memory-by-node"
+        },
+        {
+          "name": "k8s-overview-top-memory",
+          "type": "explore",
+          "id": "std-k8s-overview-top-memory"
+        },
+        {
+          "name": "k8s-overview-top-cpu",
+          "type": "explore",
+          "id": "std-k8s-overview-top-cpu"
+        }
+      ],
+      "migrationVersion": {
+        "dashboard": "7.9.3"
+      }
+    }
+  ]
+}
