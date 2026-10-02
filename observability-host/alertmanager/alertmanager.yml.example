@@ -6,55 +6,15 @@ templates:
 
 route:
   receiver: telegram-observability
+
   group_by:
     - alertname
     - severity
     - environment
+
   group_wait: 30s
   group_interval: 5m
   repeat_interval: 4h
-
-inhibit_rules:
-  - source_matchers:
-      - severity="critical"
-      - alertname="NodeDiskUsageCritical"
-    target_matchers:
-      - severity="warning"
-      - alertname="NodeDiskUsageHigh"
-    equal:
-      - environment
-      - node
-      - mountpoint
-
-  - source_matchers:
-      - severity="critical"
-      - alertname="NodeCPUUsageCritical"
-    target_matchers:
-      - severity="warning"
-      - alertname="NodeCPUUsageHigh"
-    equal:
-      - environment
-      - node
-
-  - source_matchers:
-      - severity="critical"
-      - alertname="NodeMemoryUsageCritical"
-    target_matchers:
-      - severity="warning"
-      - alertname="NodeMemoryUsageHigh"
-    equal:
-      - environment
-      - node
-
-  - source_matchers:
-      - severity="critical"
-      - alertname="ApplicationP99LatencyCritical"
-    target_matchers:
-      - severity="warning"
-      - alertname="ApplicationP99LatencyHigh"
-    equal:
-      - environment
-      - service
 
 receivers:
   - name: telegram-observability
@@ -64,3 +24,41 @@ receivers:
         send_resolved: true
         parse_mode: ''
         message: '{{ template "telegram.observability.message" . }}'
+
+# Higher-severity alerts suppress the corresponding lower-severity
+# notification for the same affected resource. Prometheus continues
+# evaluating both rules; this controls notification noise only.
+inhibit_rules:
+
+  - source_matchers:
+      - 'alertname="NodeDiskUsageCritical"'
+    target_matchers:
+      - 'alertname="NodeDiskUsageHigh"'
+    equal:
+      - environment
+      - node
+      - mountpoint
+
+  - source_matchers:
+      - 'alertname="NodeCPUUsageCritical"'
+    target_matchers:
+      - 'alertname="NodeCPUUsageHigh"'
+    equal:
+      - environment
+      - node
+
+  - source_matchers:
+      - 'alertname="NodeMemoryUsageCritical"'
+    target_matchers:
+      - 'alertname="NodeMemoryUsageHigh"'
+    equal:
+      - environment
+      - node
+
+  - source_matchers:
+      - 'alertname="ApplicationP99LatencyCritical"'
+    target_matchers:
+      - 'alertname="ApplicationP99LatencyHigh"'
+    equal:
+      - environment
+      - service
