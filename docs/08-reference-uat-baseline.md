@@ -28,6 +28,7 @@ The reference dedicated host runs these systemd-managed services:
 - Data Prepper
 - Prometheus
 - Alertmanager
+- node_exporter
 - process-exporter
 
 The Prometheus reference process uses:
