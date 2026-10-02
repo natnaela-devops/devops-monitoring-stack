@@ -13,7 +13,7 @@ This implementation replaces the repository's former SigNoz/Grafana experiment. 
 | Kubernetes | OpenTelemetry Collector Contrib | 0.156.0 | OTLP gateway, Kubernetes enrichment, and signal routing |
 | Kubernetes | Fluent Bit | 4.1.0 | Container stdout collection for workloads not exporting OTLP logs |
 | Processing | Data Prepper | 2.16.0 | Trace/log ingestion and v2 service-map generation |
-| Metrics | Prometheus | 3.14.0 | Metrics storage, RED rules, SLO calculations, and reporting metrics |
+| Metrics | Prometheus | 3.14.0 | Metrics storage, remote-write ingestion, alert evaluation, and optional derived/reporting rules |
 | Alerting | Alertmanager | 0.31.1 | Alert routing and notification delivery |
 | Host metrics | node_exporter | 1.12.1 | Linux host CPU, memory, disk, filesystem, network, load, and uptime metrics |
 | Host processes | process-exporter | 0.8.7 | Selected process-level metrics on the observability host |
@@ -69,7 +69,7 @@ Every Java container must run exactly one OpenTelemetry Java agent.
 
 Applications exporting logs directly through OTLP use `fluentbit.io/exclude: "true"` to prevent Fluent Bit from sending an uncorrelated duplicate.
 
-See [Kubernetes Telemetry Onboarding](docs/05-kubernetes-telemetry-onboarding.md) for both manifests, the double-agent guardrail, validation, and rollback.
+See [Kubernetes Telemetry Onboarding](docs/05-kubernetes-telemetry-onboarding.md) for the in-cluster OpenTelemetry Collector/Operator manifests, the double-agent guardrail, validation, and rollback. Linux host metrics are onboarded separately with [node_exporter](docs/16-linux-host-metrics-onboarding.md).
 
 ## Repository layout
 
@@ -92,7 +92,8 @@ See [Kubernetes Telemetry Onboarding](docs/05-kubernetes-telemetry-onboarding.md
 │   ├── 12-developer-search-standardization.md
 │   ├── 13-explore-log-datasets.md
 │   ├── 14-alerting-standard.md
-│   └── 15-ubuntu-2404-cleanroom-qualification.md
+│   ├── 15-ubuntu-2404-cleanroom-qualification.md
+│   └── 16-linux-host-metrics-onboarding.md
 ├── evidence/                           # Evidence policy; generated output stays local
 ├── kubernetes/
 │   ├── collector/                       # Collector, Service, RBAC, and configuration
@@ -143,6 +144,7 @@ Read the repository in this order:
 13. [Explore Logs Dataset Separation](docs/13-explore-log-datasets.md)
 14. [Alerting Standard](docs/14-alerting-standard.md)
 15. [Ubuntu 24.04 Clean-Room Qualification](docs/15-ubuntu-2404-cleanroom-qualification.md)
+16. [Linux Host Metrics Onboarding](docs/16-linux-host-metrics-onboarding.md)
 
 ## Lab-only OpenSearch start
 
