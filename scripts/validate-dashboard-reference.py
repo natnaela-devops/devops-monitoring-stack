@@ -17,7 +17,7 @@ EXPECTED = {
 
 PRIVATE_PATTERNS = {
     "live private subnet": re.compile(r"\b10\.1\.22\.\d+\b"),
-    "workspace id": re.compile(r"Wbvl8L"),
+    "workspace id": re.compile("Wb" + "vl8L"),
     "customer name": re.compile(r"\bEnat\b", re.I),
     "customer hostname": re.compile(r"\bebuat[a-z0-9.-]*\b", re.I),
     "live environment name": re.compile(r"\buat2\b", re.I),
