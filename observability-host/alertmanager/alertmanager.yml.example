@@ -5,17 +5,59 @@ templates:
   - /etc/alertmanager/templates/*.tmpl
 
 route:
-  receiver: telegram-infrastructure
+  receiver: telegram-observability
   group_by:
     - alertname
     - severity
     - environment
-  group_wait: 10s
+  group_wait: 30s
   group_interval: 5m
   repeat_interval: 4h
 
+inhibit_rules:
+  - source_matchers:
+      - severity="critical"
+      - alertname="NodeDiskUsageCritical"
+    target_matchers:
+      - severity="warning"
+      - alertname="NodeDiskUsageHigh"
+    equal:
+      - environment
+      - node
+      - mountpoint
+
+  - source_matchers:
+      - severity="critical"
+      - alertname="NodeCPUUsageCritical"
+    target_matchers:
+      - severity="warning"
+      - alertname="NodeCPUUsageHigh"
+    equal:
+      - environment
+      - node
+
+  - source_matchers:
+      - severity="critical"
+      - alertname="NodeMemoryUsageCritical"
+    target_matchers:
+      - severity="warning"
+      - alertname="NodeMemoryUsageHigh"
+    equal:
+      - environment
+      - node
+
+  - source_matchers:
+      - severity="critical"
+      - alertname="ApplicationP99LatencyCritical"
+    target_matchers:
+      - severity="warning"
+      - alertname="ApplicationP99LatencyHigh"
+    equal:
+      - environment
+      - service
+
 receivers:
-  - name: telegram-infrastructure
+  - name: telegram-observability
     telegram_configs:
       - bot_token_file: "{{ ALERTMANAGER_TELEGRAM_TOKEN_FILE }}"
         chat_id: {{ ALERTMANAGER_TELEGRAM_CHAT_ID }}
